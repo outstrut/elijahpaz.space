@@ -3,239 +3,366 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pick a Department</title>
+<title>KORBYN</title>
 <style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
   :root {
-    --bg: #0b0b10;
-    --card: #16161f;
-    --card-hover: #1e1e2b;
-    --text: #f5f5f7;
-    --text-dim: #9a99a8;
-    --accent: #b9ff3d;
-    --border: #2a2a38;
+    --bg: #000;
+    --bg2: #0a0a0a;
+    --card: #111;
+    --card2: #1a1a1a;
+    --text: #fff;
+    --text2: #888;
+    --border: #222;
+    --glow: rgba(255,255,255,0.03);
   }
 
   [data-theme="light"] {
-    --bg: #f4f3ef;
-    --card: #ffffff;
-    --card-hover: #f0f0ec;
-    --text: #14141a;
-    --text-dim: #6b6a76;
-    --accent: #6b3fd4;
-    --border: #e4e2db;
+    --bg: #f5f5f5;
+    --bg2: #fff;
+    --card: #e8e8e8;
+    --card2: #ddd;
+    --text: #000;
+    --text2: #555;
+    --border: #ccc;
+    --glow: rgba(0,0,0,0.02);
   }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
     background: var(--bg);
     color: var(--text);
-    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-family: 'Inter', 'Helvetica Neue', system-ui, sans-serif;
     min-height: 100vh;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    padding: 2rem 1.25rem;
-    transition: background 0.3s ease, color 0.3s ease;
-    -webkit-font-smoothing: antialiased;
-  }
-
-  .topbar {
-    width: 100%;
-    max-width: 560px;
-    display: flex;
-    justify-content: flex-end;
-    margin-bottom: 1.5rem;
-  }
-
-  .toggle {
-    position: relative;
-    width: 56px;
-    height: 30px;
-    border-radius: 999px;
-    background: var(--card);
-    border: 1px solid var(--border);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    padding: 3px;
-    transition: background 0.3s ease;
-  }
-
-  .toggle .knob {
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background: var(--accent);
-    transition: transform 0.25s cubic-bezier(.4,0,.2,1);
-    transform: translateX(0);
-  }
-
-  [data-theme="light"] .toggle .knob {
-    transform: translateX(26px);
-  }
-
-  .notice {
-    max-width: 560px;
-    width: 100%;
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 0.9rem 1.1rem;
-    font-size: 0.78rem;
-    color: var(--text-dim);
-    margin-bottom: 2.5rem;
-    text-align: center;
-    line-height: 1.5;
-  }
-
-  .hero {
-    text-align: center;
-    margin-bottom: 2.5rem;
-  }
-
-  .hero .tag {
-    display: inline-block;
-    font-size: 0.7rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--accent);
-    font-weight: 700;
-    margin-bottom: 0.6rem;
-  }
-
-  h1 {
-    font-size: clamp(2rem, 8vw, 3rem);
-    font-weight: 800;
-    letter-spacing: -0.03em;
-    line-height: 1.05;
-  }
-
-  .buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 0.85rem;
-    width: 100%;
-    max-width: 480px;
-  }
-
-  a.dept-btn {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    padding: 1.15rem 1.4rem;
-    color: var(--text);
-    text-decoration: none;
-    font-size: 1.02rem;
-    font-weight: 700;
-    letter-spacing: -0.01em;
-    transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+    justify-content: center;
     overflow: hidden;
+    position: relative;
+    transition: background 0.4s ease, color 0.4s ease;
   }
 
-  a.dept-btn::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: var(--accent);
+  .bg-image {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('https://github.com/outstrut/elijahpaz.space/blob/main/db5d5ef3-13a4-47a5-ae0c-13aeffb5788b.png?raw=true') center/cover no-repeat;
+    filter: grayscale(1) brightness(0.15) blur(1px);
+    z-index: 0;
+    transition: filter 0.4s ease;
+  }
+
+  [data-theme="light"] .bg-image {
+    filter: grayscale(1) brightness(0.85) blur(0.5px);
+  }
+
+  .bg-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    z-index: 1;
+  }
+
+  [data-theme="light"] .bg-overlay {
+    background: rgba(255,255,255,0.7);
+  }
+
+  #entryScreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+
+  #entryScreen.hidden {
     opacity: 0;
-    transition: opacity 0.15s ease;
+    transform: scale(0.98);
+    pointer-events: none;
   }
 
-  a.dept-btn:active {
-    transform: scale(0.97);
+  .entry-title {
+    font-size: clamp(4rem, 18vw, 10rem);
+    font-weight: 900;
+    letter-spacing: -0.06em;
+    color: var(--text);
+    margin-bottom: 2.5rem;
   }
 
-  a.dept-btn:hover {
-    background: var(--card-hover);
-    border-color: var(--accent);
-  }
-
-  a.dept-btn .arrow {
+  .entry-btn {
+    padding: 1.2rem 4rem;
     font-size: 1.2rem;
-    color: var(--accent);
-    transition: transform 0.15s ease;
+    font-weight: 700;
+    border: 2px solid var(--text);
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
   }
 
-  a.dept-btn:hover .arrow {
-    transform: translateX(4px);
+  .entry-btn:hover {
+    background: var(--text);
+    color: var(--bg);
   }
 
-  footer {
-    margin-top: 3rem;
-    padding-top: 2rem;
-    max-width: 560px;
-    font-size: 0.72rem;
-    color: var(--text-dim);
+  #mainContent {
+    position: relative;
+    z-index: 2;
     text-align: center;
-    line-height: 1.6;
-    border-top: 1px solid var(--border);
+    padding: 2rem;
+    opacity: 0;
+    transition: opacity 1s ease;
   }
 
-  @media (max-width: 400px) {
-    a.dept-btn {
-      font-size: 0.92rem;
-      padding: 1rem 1.15rem;
+  #mainContent.visible {
+    opacity: 1;
+  }
+
+  .dox-title {
+    font-size: clamp(3rem, 12vw, 7rem);
+    font-weight: 900;
+    letter-spacing: -0.05em;
+    color: var(--text);
+    margin-bottom: 3rem;
+  }
+
+  .dox-box {
+    display: inline-block;
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 2.5rem 4rem;
+    min-width: 340px;
+    transition: background 0.3s ease, border-color 0.3s ease;
+  }
+
+  .dox-line {
+    font-size: clamp(1rem, 2.5vw, 1.3rem);
+    font-weight: 500;
+    color: var(--text);
+    padding: 0.8rem 0;
+    border-bottom: 1px solid var(--border);
+    transition: color 0.3s ease, border-color 0.3s ease;
+    letter-spacing: 0.02em;
+  }
+
+  .dox-line:last-child {
+    border-bottom: none;
+  }
+
+  .dox-line .label {
+    color: var(--text2);
+    font-weight: 400;
+    margin-right: 0.8rem;
+  }
+
+  .dox-line .value {
+    font-weight: 600;
+  }
+
+  .theme-toggle {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 50;
+    width: 48px;
+    height: 48px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 1.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    border-radius: 4px;
+  }
+
+  .theme-toggle:hover {
+    border-color: var(--text);
+  }
+
+  .audio-toggle {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 50;
+    width: 48px;
+    height: 48px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    border-radius: 4px;
+  }
+
+  .audio-toggle:hover {
+    border-color: var(--text);
+  }
+
+  .scramble {
+    display: inline-block;
+    transition: all 0.1s ease;
+  }
+
+  @media (max-width: 600px) {
+    .dox-box {
+      padding: 1.5rem 1.5rem;
+      min-width: unset;
+      width: 100%;
+    }
+    .dox-line {
+      font-size: 0.9rem;
+      white-space: normal;
+      word-break: break-word;
+    }
+    .entry-btn {
+      padding: 1rem 2.5rem;
+      font-size: 1rem;
     }
   }
 </style>
 </head>
 <body data-theme="dark">
 
-<div class="topbar">
-  <div class="toggle" id="themeToggle" role="button" aria-label="Toggle light and dark mode">
-    <div class="knob"></div>
+<div class="bg-image"></div>
+<div class="bg-overlay"></div>
+
+<button class="theme-toggle" id="themeToggle">◐</button>
+<button class="audio-toggle" id="audioToggle">♫</button>
+
+<div id="entryScreen">
+  <div class="entry-title">KORBYN</div>
+  <button class="entry-btn" id="enterBtn">enter</button>
+</div>
+
+<div id="mainContent">
+  <div class="dox-title">KORBYN</div>
+  <div class="dox-box">
+    <div class="dox-line">
+      <span class="label">NAME</span>
+      <span class="value scramble">Korbyn Korinek</span>
+    </div>
+    <div class="dox-line">
+      <span class="label">ADDRESS</span>
+      <span class="value scramble">70 South Citadel Circle, Pueblo West, CO</span>
+    </div>
+    <div class="dox-line">
+      <span class="label">MOTHER</span>
+      <span class="value scramble">Alyssa Cawthra</span>
+    </div>
+    <div class="dox-line">
+      <span class="label">FATHER</span>
+      <span class="value scramble">David Korinek</span>
+    </div>
+    <div class="dox-line">
+      <span class="label">STEP-FATHER</span>
+      <span class="value scramble">Cody Cawthra</span>
+    </div>
   </div>
 </div>
 
-<div class="notice">
-  This is an independently run, unofficial bookmark page. It is not created, operated, endorsed, or affiliated with any law enforcement agency listed below. It exists only to link out to each department's own official website.
-</div>
-
-<div class="hero">
-  <span class="tag">start here</span>
-  <h1>Pick a department</h1>
-</div>
-
-<div class="buttons">
-  <a class="dept-btn" href="https://www.lynchburgvapolice.gov/" target="_blank" rel="noopener noreferrer">
-    <span>Lynchburg PD (VA)</span>
-    <span class="arrow">&#8594;</span>
-  </a>
-  <a class="dept-btn" href="https://www.pueblosheriff.com/" target="_blank" rel="noopener noreferrer">
-    <span>Pueblo County Sheriff's Office (CO)</span>
-    <span class="arrow">&#8594;</span>
-  </a>
-  <a class="dept-btn" href="https://www.sheriff.howardcountyin.gov/" target="_blank" rel="noopener noreferrer">
-    <span>Howard County Sheriff's Office (IN)</span>
-    <span class="arrow">&#8594;</span>
-  </a>
-  <a class="dept-btn" href="https://www.volusiasheriff.gov/" target="_blank" rel="noopener noreferrer">
-    <span>Volusia County Sheriff's Office (FL)</span>
-    <span class="arrow">&#8594;</span>
-  </a>
-  <a class="dept-btn" href="https://www.oaklawn-il.gov/departments/police_department/index.php" target="_blank" rel="noopener noreferrer">
-    <span>Oak Lawn Police Dept (IL)</span>
-    <span class="arrow">&#8594;</span>
-  </a>
-</div>
-
-<footer>
-  This website is not affiliated with, endorsed by, or operated on behalf of any police department, sheriff's office, or government agency. All trademarks, seals, and names belong to their respective agencies. Links are provided solely for convenience and lead to each agency's official public website. No information is collected, stored, or transmitted by this page.
-</footer>
+<audio id="bgAudio" loop src="ID3"></audio>
 
 <script>
-  const body = document.body;
-  const toggle = document.getElementById('themeToggle');
-  const stored = null;
-  toggle.addEventListener('click', () => {
-    const current = body.getAttribute('data-theme');
-    body.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+  const entryScreen = document.getElementById('entryScreen');
+  const mainContent = document.getElementById('mainContent');
+  const enterBtn = document.getElementById('enterBtn');
+  const themeToggle = document.getElementById('themeToggle');
+  const audioToggle = document.getElementById('audioToggle');
+  const audio = document.getElementById('bgAudio');
+  let audioPlaying = false;
+
+  enterBtn.addEventListener('click', () => {
+    entryScreen.classList.add('hidden');
+    setTimeout(() => {
+      mainContent.classList.add('visible');
+    }, 700);
+    audio.play().then(() => {
+      audioPlaying = true;
+      audioToggle.textContent = '◼';
+    }).catch(() => {
+      audioToggle.textContent = '♫';
+    });
   });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !entryScreen.classList.contains('hidden')) {
+      enterBtn.click();
+    }
+  });
+
+  themeToggle.addEventListener('click', () => {
+    const current = document.body.getAttribute('data-theme');
+    document.body.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+  });
+
+  audioToggle.addEventListener('click', () => {
+    if (audioPlaying) {
+      audio.pause();
+      audioPlaying = false;
+      audioToggle.textContent = '♫';
+    } else {
+      audio.play().then(() => {
+        audioPlaying = true;
+        audioToggle.textContent = '◼';
+      }).catch(() => {
+        alert('Audio failed. Check the URL.');
+      });
+    }
+  });
+
+  document.querySelectorAll('.scramble').forEach(el => {
+    const original = el.textContent;
+    let interval;
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+
+    function scramble() {
+      let count = 0;
+      const max = 10;
+      clearInterval(interval);
+      interval = setInterval(() => {
+        if (count >= max) {
+          clearInterval(interval);
+          el.textContent = original;
+          return;
+        }
+        let result = '';
+        for (let i = 0; i < original.length; i++) {
+          result += Math.random() < 0.4 ? chars[Math.floor(Math.random() * chars.length)] : original[i];
+        }
+        el.textContent = result;
+        count++;
+      }, 50);
+    }
+
+    el.addEventListener('mouseenter', scramble);
+    el.addEventListener('mouseleave', () => {
+      clearInterval(interval);
+      el.textContent = original;
+    });
+  });
+
+  console.log('KORBYN');
 </script>
 
 </body>
